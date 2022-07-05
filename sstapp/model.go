@@ -1,4 +1,4 @@
-package sst
+package sstapp
 
 import (
 	"crypto/md5"
@@ -16,7 +16,7 @@ type SSTokenOption struct {
 	db         *sql.DB
 	revokeList []*revokedToken
 
-	sync.RWMutex
+	mutex sync.RWMutex
 }
 
 type OperateResult struct {
@@ -42,19 +42,19 @@ func NewSSTokenOption(aesKey, sqliteFile string, logger zerolog.Logger) (*SSToke
 	sst.aesKey = []byte(sst.getAesKey())
 
 	// initial sqlite3 connection and create db?
-	err := sst.GetDb()
+	err := sst.getDb()
 	if err != nil {
-		sst.logger.Error().Err(err).Msg("create new sst option failed")
+		sst.logger.Error().Err(err).Msg("create new sstapp option failed")
 		return nil, err
 	}
 
-	err = sst.CreateTable()
+	err = sst.createTable()
 	if err != nil {
 		return nil, err
 	}
 
 	// load revoke list data into memory
-	err = sst.LoadRevokeList()
+	err = sst.loadRevokeList()
 	if err != nil {
 		return nil, err
 	}

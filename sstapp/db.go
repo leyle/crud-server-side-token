@@ -1,4 +1,4 @@
-package sst
+package sstapp
 
 import (
 	"context"
@@ -19,7 +19,7 @@ const createRevokeTable string = `
 	);
 `
 
-func (sst *SSTokenOption) GetDb() error {
+func (sst *SSTokenOption) getDb() error {
 	db, err := sql.Open("sqlite3", sst.sqliteFile)
 	if err != nil {
 		sst.logger.Error().Err(err).Msg("open sqlite3 db file failed")
@@ -38,7 +38,7 @@ func (sst *SSTokenOption) GetDb() error {
 	return nil
 }
 
-func (sst *SSTokenOption) CreateTable() error {
+func (sst *SSTokenOption) createTable() error {
 	result, err := sst.db.Exec(createRevokeTable)
 	if err != nil {
 		sst.logger.Error().Err(err).Msg("create sqlite table failed")
@@ -49,7 +49,7 @@ func (sst *SSTokenOption) CreateTable() error {
 	return nil
 }
 
-func (sst *SSTokenOption) InsertIntoRevokeList(token, userId string, t int64) error {
+func (sst *SSTokenOption) insertIntoRevokeList(token, userId string, t int64) error {
 	ctx := context.Background()
 	tx, err := sst.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -89,9 +89,9 @@ func (sst *SSTokenOption) InsertIntoRevokeList(token, userId string, t int64) er
 	return nil
 }
 
-func (sst *SSTokenOption) LoadRevokeList() error {
+func (sst *SSTokenOption) loadRevokeList() error {
 	if sst.db == nil {
-		err := sst.GetDb()
+		err := sst.getDb()
 		if err != nil {
 			sst.logger.Error().Err(err).Msg("load revoke list failed")
 			return err

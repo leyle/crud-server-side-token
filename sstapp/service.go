@@ -1,4 +1,4 @@
-package sst
+package sstapp
 
 import (
 	"github.com/leyle/server-side-token/internal"
@@ -58,8 +58,8 @@ func (sst *SSTokenOption) RevokeToken(token string) *OperateResult {
 	}
 
 	// 2. add token to revokeList
-	sst.Lock()
-	defer sst.Unlock()
+	sst.mutex.Lock()
+	defer sst.mutex.Unlock()
 	rv := &revokedToken{
 		token:  token,
 		userId: result.Msg,
@@ -68,7 +68,7 @@ func (sst *SSTokenOption) RevokeToken(token string) *OperateResult {
 	sst.revokeList = append(sst.revokeList, rv)
 
 	// add token into db's revoke list
-	err := sst.InsertIntoRevokeList(rv.token, rv.userId, rv.t)
+	err := sst.insertIntoRevokeList(rv.token, rv.userId, rv.t)
 	if err != nil {
 		sst.logger.Error().Err(err).Msg("revoke token failed")
 		return revokeTokenFailed(token, err.Error())

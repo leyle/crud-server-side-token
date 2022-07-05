@@ -1,4 +1,4 @@
-package sst
+package sstapp
 
 import (
 	"fmt"

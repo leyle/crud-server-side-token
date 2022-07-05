@@ -1,4 +1,4 @@
-package sst
+package sstapp
 
 import (
 	"github.com/leyle/go-api-starter/logmiddleware"
@@ -10,7 +10,7 @@ import (
 func TestGenerateToken(t *testing.T) {
 	logger := logmiddleware.GetLogger(logmiddleware.LogTargetConsole)
 	aesKey := "^ct9<.yT3CK*MQ6j/V"
-	sqlFile := "test.db"
+	sqlFile := "/tmp/test.db"
 	sst, err := NewSSTokenOption(aesKey, sqlFile, logger)
 	if err != nil {
 		t.Error(err)
@@ -86,7 +86,7 @@ func TestSQLiteOpt(t *testing.T) {
 	t.Log(token)
 
 	// token = "_xMqRdnhyzBgYbnXeAuEa8CN5sMN8O_zIlIcDYLqAZQvp84zG93SsHGIILQb5wgU"
-	err = sst.InsertIntoRevokeList(token, userId, time.Now().Unix())
+	err = sst.insertIntoRevokeList(token, userId, time.Now().Unix())
 	if err != nil {
 		t.Error(err)
 	}

@@ -42,7 +42,7 @@ func (sst *SSTokenOption) VerifyToken(token string) *OperateResult {
 	}
 
 	sst.logger.Debug().Str("userId", userId).Int64("t", createdAt).Msg("verify token, decode succeed")
-	return checkTokenValid(token, createdAt)
+	return checkTokenValid(token, userId, createdAt)
 }
 
 func (sst *SSTokenOption) RevokeToken(token string) *OperateResult {
@@ -53,21 +53,22 @@ func (sst *SSTokenOption) RevokeToken(token string) *OperateResult {
 	// 1. check token is valid
 	result := sst.VerifyToken(token)
 	if !result.OK {
-		sst.logger.Warn().Str("token", token).Msgf("revoke token, but token is invalid[%s|%d]", result.Reason, result.T)
-		return revokeTokenFailed(token, result.Reason)
+		sst.logger.Warn().Str("token", token).Msgf("revoke token, but token is invalid[%s|%d]", result.Msg, result.T)
+		return revokeTokenFailed(token, result.Msg)
 	}
 
 	// 2. add token to revokeList
 	sst.Lock()
 	defer sst.Unlock()
 	rv := &revokedToken{
-		token: token,
-		t:     time.Now().Unix(),
+		token:  token,
+		userId: result.Msg,
+		t:      time.Now().Unix(),
 	}
 	sst.revokeList = append(sst.revokeList, rv)
 
 	// add token into db's revoke list
-	err := sst.InsertIntoRevokeList(rv.token, rv.t)
+	err := sst.InsertIntoRevokeList(rv.token, rv.userId, rv.t)
 	if err != nil {
 		sst.logger.Error().Err(err).Msg("revoke token failed")
 		return revokeTokenFailed(token, err.Error())

@@ -20,15 +20,16 @@ type SSTokenOption struct {
 }
 
 type OperateResult struct {
-	Token  string
-	OK     bool
-	Reason string
-	T      int64 // T means token last updated time
+	Token string
+	OK    bool
+	Msg   string
+	T     int64 // T means token last updated time
 }
 
 type revokedToken struct {
-	token string
-	t     int64
+	token  string
+	userId string
+	t      int64
 }
 
 func NewSSTokenOption(aesKey, sqliteFile string, logger zerolog.Logger) (*SSTokenOption, error) {
@@ -67,11 +68,12 @@ func (sst *SSTokenOption) getAesKey() string {
 	return hex.EncodeToString(m.Sum(nil))
 }
 
-func checkTokenValid(token string, t int64) *OperateResult {
+func checkTokenValid(token, userId string, t int64) *OperateResult {
 	// t is token creation time
 	result := &OperateResult{
 		Token: token,
 		OK:    true,
+		Msg:   userId,
 		T:     t,
 	}
 	return result
@@ -80,19 +82,19 @@ func checkTokenValid(token string, t int64) *OperateResult {
 func checkTokenInvalid(token, reason string, t int64) *OperateResult {
 	// t is token invalid time or current time
 	result := &OperateResult{
-		Token:  token,
-		OK:     false,
-		Reason: reason,
-		T:      t,
+		Token: token,
+		OK:    false,
+		Msg:   reason,
+		T:     t,
 	}
 	return result
 }
 
 func revokeTokenFailed(token, reason string) *OperateResult {
 	result := &OperateResult{
-		Token:  token,
-		OK:     false,
-		Reason: reason,
+		Token: token,
+		OK:    false,
+		Msg:   reason,
 	}
 	return result
 }

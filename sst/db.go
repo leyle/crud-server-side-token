@@ -14,6 +14,7 @@ const createRevokeTable string = `
 	CREATE TABLE IF NOT EXISTS revoke_list (
 		id INTEGER NOT NULL PRIMARY KEY,
 	 	token TEXT UNIQUE,
+	 	userId TEXT,
 		t INTEGER
 	);
 `
@@ -48,7 +49,7 @@ func (sst *SSTokenOption) CreateTable() error {
 	return nil
 }
 
-func (sst *SSTokenOption) InsertIntoRevokeList(token string, t int64) error {
+func (sst *SSTokenOption) InsertIntoRevokeList(token, userId string, t int64) error {
 	ctx := context.Background()
 	tx, err := sst.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -72,7 +73,7 @@ func (sst *SSTokenOption) InsertIntoRevokeList(token string, t int64) error {
 	}
 
 	// insert into db
-	_, err = tx.ExecContext(ctx, "INSERT INTO revoke_list(token, t) VALUES(?, ?)", token, t)
+	_, err = tx.ExecContext(ctx, "INSERT INTO revoke_list(token, t, userId) VALUES(?, ?, ?)", token, t, userId)
 	if err != nil {
 		sst.logger.Error().Err(err).Msg("insert revoke list failed")
 		return err
@@ -97,7 +98,7 @@ func (sst *SSTokenOption) LoadRevokeList() error {
 		}
 	}
 
-	rows, err := sst.db.Query("SELECT token, t FROM revoke_list")
+	rows, err := sst.db.Query("SELECT token, t, userId FROM revoke_list")
 	if err != nil {
 		sst.logger.Error().Err(err).Msg("select from revoke list failed")
 		return err
@@ -105,7 +106,7 @@ func (sst *SSTokenOption) LoadRevokeList() error {
 
 	for rows.Next() {
 		rv := &revokedToken{}
-		err = rows.Scan(&rv.token, &rv.t)
+		err = rows.Scan(&rv.token, &rv.t, &rv.userId)
 		if err != nil {
 			sst.logger.Error().Err(err).Msg("scan sqlite rows failed")
 			return err

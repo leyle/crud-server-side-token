@@ -33,12 +33,14 @@ func (sst *SSTokenOption) VerifyToken(token string) *OperateResult {
 	// 2. check if token can be decrypted
 	text, err := internal.Decrypt(sst.aesKey, token)
 	if err != nil {
-		sst.logger.Error().Err(err).Str("token", token).Msg("decrypt aes token failed")
+		sst.logger.Warn().Err(err).Str("token", token).Msg("decrypt aes token failed")
+		return checkTokenInvalid(token, "invalid token format", 0)
 	}
 
 	userId, createdAt, err := decodeUserId(text)
 	if err != nil {
-		sst.logger.Error().Err(err).Str("token", token).Msg("decode user id failed")
+		sst.logger.Warn().Err(err).Str("token", token).Msg("decode user id failed")
+		return checkTokenInvalid(token, "invalid token format, maybe old version", 0)
 	}
 
 	sst.logger.Debug().Str("userId", userId).Int64("t", createdAt).Msg("verify token, decode succeed")

@@ -1,0 +1,15 @@
+debug: true
+server:
+  host: "0.0.0.0"
+  port: 9000
+
+sst:
+  aesKey: "Jzw8C%E/y,FSK4<}n?"
+  sqliteFile: "/tmp/sample.db"
+  # selfToken created by itself, usage: ./sample -c /path/to/conf.yaml -t userid
+  selfToken: "HjLPYffNPbeGQeyGh8XJzTShur9uBDzmb9jw5S-C1pwPrvGafDOo6G6kx84CFUme"
+
+log:
+  # line -> console log with color
+  # json -> console log, but json structure
+  format: "json"

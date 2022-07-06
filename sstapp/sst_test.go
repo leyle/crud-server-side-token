@@ -7,14 +7,19 @@ import (
 	"time"
 )
 
-func TestGenerateToken(t *testing.T) {
+func getSSTOpt() *SSTokenOption {
 	logger := logmiddleware.GetLogger(logmiddleware.LogTargetConsole)
 	aesKey := "^ct9<.yT3CK*MQ6j/V"
 	sqlFile := "/tmp/test.db"
 	sst, err := NewSSTokenOption(aesKey, sqlFile, logger)
 	if err != nil {
-		t.Error(err)
+		panic(err)
 	}
+	return sst
+}
+
+func TestGenerateToken(t *testing.T) {
+	sst := getSSTOpt()
 
 	userId := "cdi-service"
 
@@ -26,13 +31,7 @@ func TestGenerateToken(t *testing.T) {
 }
 
 func TestVerifyToken(t *testing.T) {
-	logger := logmiddleware.GetLogger(logmiddleware.LogTargetConsole)
-	aesKey := "^ct9<.yT3CK*MQ6j/V"
-	sqlFile := "/tmp/test.db"
-	sst, err := NewSSTokenOption(aesKey, sqlFile, logger)
-	if err != nil {
-		t.Error(err)
-	}
+	sst := getSSTOpt()
 
 	// token := "nb98xra8HqsxlymV3M4vFcus8FJvUsSnrGD8kRt09fg6CAi5OpuJAkODKTiN1W5k"
 	token := "K8R1LPIiqHkxkrb-cA5Kwe3TUi86sgxnVrp1VNpfl04-p2iawOOOlAA6TnzmJvGk"
@@ -42,14 +41,24 @@ func TestVerifyToken(t *testing.T) {
 	t.Log(result)
 }
 
-func TestRevokeToken(t *testing.T) {
-	logger := logmiddleware.GetLogger(logmiddleware.LogTargetConsole)
-	aesKey := "^ct9<.yT3CK*MQ6j/V"
-	sqlFile := "/tmp/test.db"
-	sst, err := NewSSTokenOption(aesKey, sqlFile, logger)
-	if err != nil {
-		t.Error(err)
+func TestVerifyInvalidToken(t *testing.T) {
+	sst := getSSTOpt()
+
+	// token := "abcinvalidtoken"
+	// token := "4JqjLbYWaM2Fos0Tg-PgRYBiAm3rNS2WSnLvThKWvdC034JSkprv7rOhwyocIKnx"
+	token := "x-RPXB5KPImWEr9HhnzKkBTgbvHDy10UY6bF58wjTfXF91EpeVOxIxXc6Uc2cYGy"
+
+	result := sst.VerifyToken(token)
+
+	t.Log(result)
+
+	if result.OK {
+		t.FailNow()
 	}
+}
+
+func TestRevokeToken(t *testing.T) {
+	sst := getSSTOpt()
 
 	userId := "cdi-service"
 
@@ -69,13 +78,7 @@ func TestRevokeToken(t *testing.T) {
 }
 
 func TestSQLiteOpt(t *testing.T) {
-	logger := logmiddleware.GetLogger(logmiddleware.LogTargetConsole)
-	aesKey := "^ct9<.yT3CK*MQ6j/V"
-	sqlFile := "/tmp/test.db"
-	sst, err := NewSSTokenOption(aesKey, sqlFile, logger)
-	if err != nil {
-		t.Error(err)
-	}
+	sst := getSSTOpt()
 
 	userId := "cdi-service"
 
@@ -93,13 +96,8 @@ func TestSQLiteOpt(t *testing.T) {
 }
 
 func BenchmarkGenerateToken(b *testing.B) {
-	logger := logmiddleware.GetLogger(logmiddleware.LogTargetConsole)
-	aesKey := "^ct9<.yT3CK*MQ6j/V"
-	sqlFile := "/tmp/test.db"
-	sst, err := NewSSTokenOption(aesKey, sqlFile, logger)
-	if err != nil {
-		b.Error(err)
-	}
+	var err error
+	sst := getSSTOpt()
 
 	userId := "cdi-service"
 
@@ -110,17 +108,6 @@ func BenchmarkGenerateToken(b *testing.B) {
 		}
 		// b.Log(token)
 	}
-}
-
-func getSSTOpt() *SSTokenOption {
-	logger := logmiddleware.GetLogger(logmiddleware.LogTargetConsole)
-	aesKey := "^ct9<.yT3CK*MQ6j/V"
-	sqlFile := "/tmp/test.db"
-	sst, err := NewSSTokenOption(aesKey, sqlFile, logger)
-	if err != nil {
-		panic(err)
-	}
-	return sst
 }
 
 func BenchmarkRevokeToken(b *testing.B) {

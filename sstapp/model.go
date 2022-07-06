@@ -8,10 +8,14 @@ import (
 	"sync"
 )
 
+const (
+	ServerSideTokenHeaderName = "X-Server-Side-Token"
+)
+
 type SSTokenOption struct {
 	aesKey     []byte
 	sqliteFile string
-	logger     zerolog.Logger
+	logger     *zerolog.Logger
 
 	db         *sql.DB
 	revokeList []*revokedToken
@@ -32,14 +36,14 @@ type revokedToken struct {
 	t      int64
 }
 
-func NewSSTokenOption(aesKey, sqliteFile string, logger zerolog.Logger) (*SSTokenOption, error) {
+func NewSSTokenOption(aesKey, sqliteFile string, logger *zerolog.Logger) (*SSTokenOption, error) {
 	sst := &SSTokenOption{
 		sqliteFile: sqliteFile,
 		logger:     logger,
 		revokeList: make([]*revokedToken, 0),
 	}
 
-	sst.aesKey = []byte(sst.getAesKey())
+	sst.aesKey = []byte(sst.getAesKey(aesKey))
 
 	// initial sqlite3 connection and create db?
 	err := sst.getDb()
@@ -62,9 +66,19 @@ func NewSSTokenOption(aesKey, sqliteFile string, logger zerolog.Logger) (*SSToke
 	return sst, nil
 }
 
-func (sst *SSTokenOption) getAesKey() string {
+func (sst *SSTokenOption) New(logger *zerolog.Logger) *SSTokenOption {
+	netSST := &SSTokenOption{
+		aesKey:     sst.aesKey,
+		sqliteFile: sst.sqliteFile,
+		logger:     logger,
+		revokeList: sst.revokeList,
+	}
+	return netSST
+}
+
+func (sst *SSTokenOption) getAesKey(key string) string {
 	m := md5.New()
-	m.Write([]byte(sst.aesKey))
+	m.Write([]byte(key))
 	return hex.EncodeToString(m.Sum(nil))
 }
 

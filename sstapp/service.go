@@ -26,7 +26,7 @@ func (sst *SSTokenOption) VerifyToken(token string) *OperateResult {
 	for _, rt := range sst.revokeList {
 		if rt.token == token {
 			sst.logger.Warn().Str("token", token).Msgf("token has been revoked at[%d]", rt.t)
-			return checkTokenInvalid(token, "token has been revoked", rt.t)
+			return checkTokenInvalid(token, "token has been revoked", rt.t, ErrRevokeAlreadyRevoked)
 		}
 	}
 
@@ -34,13 +34,13 @@ func (sst *SSTokenOption) VerifyToken(token string) *OperateResult {
 	text, err := internal.Decrypt(sst.aesKey, token)
 	if err != nil {
 		sst.logger.Warn().Err(err).Str("token", token).Msg("decrypt aes token failed")
-		return checkTokenInvalid(token, "invalid token format", 0)
+		return checkTokenInvalid(token, "invalid token format", 0, ErrDecryptMsgFailed)
 	}
 
 	userId, createdAt, err := decodeUserId(text)
 	if err != nil {
 		sst.logger.Warn().Err(err).Str("token", token).Msg("decode user id failed")
-		return checkTokenInvalid(token, "invalid token format, maybe old version", 0)
+		return checkTokenInvalid(token, "invalid token format, maybe old version", 0, ErrInvalidRawMsgFormat)
 	}
 
 	sst.logger.Debug().Str("userId", userId).Int64("t", createdAt).Msg("verify token, decode succeed")
@@ -56,7 +56,7 @@ func (sst *SSTokenOption) RevokeToken(token string) *OperateResult {
 	result := sst.VerifyToken(token)
 	if !result.OK {
 		sst.logger.Warn().Str("token", token).Msgf("revoke token, but token is invalid[%s|%d]", result.Msg, result.T)
-		return revokeTokenFailed(token, result.Msg)
+		return revokeTokenFailed(token, result.Msg, result.Err)
 	}
 
 	// 2. add token to revokeList
@@ -73,7 +73,7 @@ func (sst *SSTokenOption) RevokeToken(token string) *OperateResult {
 	err := sst.insertIntoRevokeList(rv.token, rv.userId, rv.t)
 	if err != nil {
 		sst.logger.Error().Err(err).Msg("revoke token failed")
-		return revokeTokenFailed(token, err.Error())
+		return revokeTokenFailed(token, err.Error(), ErrSaveDBFailed)
 	}
 
 	return revokeTokenSucceed(token, rv.t)

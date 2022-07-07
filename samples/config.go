@@ -17,8 +17,7 @@ type Config struct {
 }
 
 type SSTOption struct {
-	AesKey     string `yaml:"aesKey"`
-	SqliteFile string `yaml:"sqliteFile"`
+	AesKey string `yaml:"aesKey"`
 }
 
 type LogOption struct {

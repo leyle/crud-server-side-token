@@ -10,8 +10,7 @@ import (
 func getSSTOpt() *SSTokenOption {
 	logger := logmiddleware.GetLogger(logmiddleware.LogTargetConsole)
 	aesKey := "^ct9<.yT3CK*MQ6j/V"
-	sqlFile := "/tmp/test.db"
-	sst, err := NewSSTokenOption(aesKey, sqlFile, logger)
+	sst, err := NewSSTokenOption(aesKey, &logger)
 	if err != nil {
 		panic(err)
 	}

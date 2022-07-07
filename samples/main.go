@@ -43,12 +43,11 @@ func main() {
 
 	// initial server side token
 	aesKey := conf.SST.AesKey
-	sqliteFile := conf.SST.SqliteFile
-	if aesKey == "" || sqliteFile == "" {
-		fmt.Println("invalid sst(server side token) config values, aesKey or sqliteFile is empty")
+	if aesKey == "" {
+		fmt.Println("invalid sst(server side token) config values, aesKey is empty")
 		os.Exit(1)
 	}
-	sst, err := sstapp.NewSSTokenOption(aesKey, sqliteFile, &logger)
+	sst, err := sstapp.NewSSTokenOption(aesKey, &logger)
 	if err != nil {
 		fmt.Println("create server side token object failed")
 		fmt.Println(err)

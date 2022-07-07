@@ -4,12 +4,19 @@ import (
 	"crypto/md5"
 	"database/sql"
 	"encoding/hex"
+	"fmt"
 	"github.com/rs/zerolog"
+	"os"
 	"sync"
 )
 
 const (
 	ServerSideTokenHeaderName = "X-Server-Side-Token"
+)
+
+const (
+	sqliteCfgPath    = ".config/sst"
+	sqliteDbFilename = "sst.db"
 )
 
 type SSTokenOption struct {
@@ -28,6 +35,7 @@ type OperateResult struct {
 	OK    bool
 	Msg   string
 	T     int64 // T means token last updated time
+	Err   error
 }
 
 type revokedToken struct {
@@ -36,17 +44,21 @@ type revokedToken struct {
 	t      int64
 }
 
-func NewSSTokenOption(aesKey, sqliteFile string, logger *zerolog.Logger) (*SSTokenOption, error) {
+func NewSSTokenOption(aesKey string, logger *zerolog.Logger) (*SSTokenOption, error) {
 	sst := &SSTokenOption{
-		sqliteFile: sqliteFile,
 		logger:     logger,
 		revokeList: make([]*revokedToken, 0),
+	}
+
+	err := sst.insureSqliteFile()
+	if err != nil {
+		return nil, err
 	}
 
 	sst.aesKey = []byte(sst.getAesKey(aesKey))
 
 	// initial sqlite3 connection and create db?
-	err := sst.getDb()
+	err = sst.getDb()
 	if err != nil {
 		sst.logger.Error().Err(err).Msg("create new sstapp option failed")
 		return nil, err
@@ -66,7 +78,31 @@ func NewSSTokenOption(aesKey, sqliteFile string, logger *zerolog.Logger) (*SSTok
 	return sst, nil
 }
 
-func (sst *SSTokenOption) New(logger *zerolog.Logger) *SSTokenOption {
+func (sst *SSTokenOption) insureSqliteFile() error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		sst.logger.Error().Err(err).Msg("create sqlite path, get user home dir failed")
+		return err
+	}
+
+	sstDbPath := fmt.Sprintf("%s/%s", home, sqliteCfgPath)
+	err = os.MkdirAll(sstDbPath, os.ModePerm)
+	if err != nil {
+		sst.logger.Error().Err(err).Msg("create sqlite path failed")
+		return err
+	}
+
+	sqliteDbPath := fmt.Sprintf("%s/%s", sstDbPath, sqliteDbFilename)
+	sst.sqliteFile = sqliteDbPath
+
+	return nil
+}
+
+func (sst *SSTokenOption) SqliteFilePath() string {
+	return sst.sqliteFile
+}
+
+func (sst *SSTokenOption) Copy(logger *zerolog.Logger) *SSTokenOption {
 	netSST := &SSTokenOption{
 		aesKey:     sst.aesKey,
 		sqliteFile: sst.sqliteFile,
@@ -93,22 +129,24 @@ func checkTokenValid(token, userId string, t int64) *OperateResult {
 	return result
 }
 
-func checkTokenInvalid(token, reason string, t int64) *OperateResult {
+func checkTokenInvalid(token, reason string, t int64, err error) *OperateResult {
 	// t is token invalid time or current time
 	result := &OperateResult{
 		Token: token,
 		OK:    false,
 		Msg:   reason,
 		T:     t,
+		Err:   err,
 	}
 	return result
 }
 
-func revokeTokenFailed(token, reason string) *OperateResult {
+func revokeTokenFailed(token, reason string, err error) *OperateResult {
 	result := &OperateResult{
 		Token: token,
 		OK:    false,
 		Msg:   reason,
+		Err:   err,
 	}
 	return result
 }

@@ -28,7 +28,7 @@ func (op *AppOption) New(c *gin.Context) *AppOption {
 		C:      c,
 		Logger: logger,
 		Conf:   op.Conf,
-		SST:    op.SST.New(logger),
+		SST:    op.SST.Copy(logger),
 	}
 	return ctx
 }

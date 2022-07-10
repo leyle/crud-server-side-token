@@ -31,15 +31,6 @@ func GcmEncrypt(key, text []byte) ([]byte, error) {
 	return result, nil
 }
 
-func HexEncodeCipherText(cipherText []byte) string {
-	return hex.EncodeToString(cipherText)
-}
-
-func HexDecodeCipherString(msg string) ([]byte, error) {
-	cipherText, err := hex.DecodeString(msg)
-	return cipherText, err
-}
-
 func GcmDecrypt(key, cipherText []byte) ([]byte, error) {
 	key32 := makeKeyLength32(key)
 	c, err := aes.NewCipher(key32)
@@ -66,4 +57,13 @@ func GcmDecrypt(key, cipherText []byte) ([]byte, error) {
 	}
 
 	return plainText, nil
+}
+
+func HexEncodeCipherText(cipherText []byte) string {
+	return hex.EncodeToString(cipherText)
+}
+
+func HexDecodeCipherString(msg string) ([]byte, error) {
+	cipherText, err := hex.DecodeString(msg)
+	return cipherText, err
 }

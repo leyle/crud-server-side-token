@@ -1,10 +1,9 @@
 package sstapp
 
 import (
-	"crypto/md5"
 	"database/sql"
-	"encoding/hex"
 	"fmt"
+	"github.com/leyle/server-side-token/internal"
 	"github.com/rs/zerolog"
 	"os"
 	"strings"
@@ -49,6 +48,7 @@ type revokedToken struct {
 
 func NewSSTokenOption(aesKey string, logger *zerolog.Logger) (*SSTokenOption, error) {
 	sst := &SSTokenOption{
+		aesKey:     []byte(aesKey),
 		logger:     logger,
 		revokeList: make([]*revokedToken, 0),
 	}
@@ -57,8 +57,6 @@ func NewSSTokenOption(aesKey string, logger *zerolog.Logger) (*SSTokenOption, er
 	if err != nil {
 		return nil, err
 	}
-
-	sst.aesKey = []byte(sst.getAesKey(aesKey))
 
 	// initial sqlite3 connection and create db?
 	err = sst.getDb()
@@ -115,10 +113,32 @@ func (sst *SSTokenOption) Copy(logger *zerolog.Logger) *SSTokenOption {
 	return netSST
 }
 
-func (sst *SSTokenOption) getAesKey(key string) string {
-	m := md5.New()
-	m.Write([]byte(key))
-	return hex.EncodeToString(m.Sum(nil))
+func (sst *SSTokenOption) encrypt(userId []byte) (string, error) {
+	cipherText, err := internal.GcmEncrypt(sst.aesKey, userId)
+	if err != nil {
+		sst.logger.Error().Err(err).Msg("encrypt userId failed")
+		return "", err
+	}
+
+	b64str := internal.Base64EncodeCipherText(cipherText)
+
+	return b64str, nil
+}
+
+func (sst *SSTokenOption) decrypt(b64CipherText string) (string, error) {
+	cipherText, err := internal.Base64DecodeCipherString(b64CipherText)
+	if err != nil {
+		sst.logger.Warn().Err(err).Msg("decode base64 cipher text failed")
+		return "", err
+	}
+
+	plainBytes, err := internal.GcmDecrypt(sst.aesKey, cipherText)
+	if err != nil {
+		sst.logger.Warn().Err(err).Msg("decrpyt cipher text failed")
+		return "", err
+	}
+
+	return string(plainBytes), nil
 }
 
 func (sst *SSTokenOption) packSSToken(cipher string) string {

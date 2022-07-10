@@ -7,6 +7,8 @@ import (
 	"github.com/leyle/go-api-starter/logmiddleware"
 	"github.com/leyle/server-side-token/sstapp"
 	"github.com/rs/zerolog"
+	"gopkg.in/yaml.v3"
+	"io/ioutil"
 	"os"
 )
 
@@ -22,10 +24,13 @@ func main() {
 	var vToken string
 	var xToken string
 
+	var secretFile string
+
 	flag.IntVar(&aesKeyLen, "createAesKey", -1, "-createAesKey 20")
 	flag.StringVar(&userId, "createToken", "", "-createToken $USER_ID")
 	flag.StringVar(&vToken, "verifyToken", "", "-verifyToken $TOKEN")
 	flag.StringVar(&xToken, "revokeToken", "", "-revokeToken $TOKEN")
+	flag.StringVar(&secretFile, "secretFile", "", "-secretFile /some/yaml/file/path")
 
 	flag.Parse()
 
@@ -36,18 +41,30 @@ func main() {
 		return
 	}
 
+	// below commands needs secret key
+	if secretFile == "" {
+		logger.Error().Msg("no secret yaml file")
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+
+	secretKey, err := readSecretFile(secretFile, &logger)
+	if err != nil {
+		os.Exit(1)
+	}
+
 	if userId != "" {
-		generateToken(userId, &logger)
+		generateToken(userId, secretKey, &logger)
 		return
 	}
 
 	if vToken != "" {
-		verifyToken(vToken, &logger)
+		verifyToken(vToken, secretKey, &logger)
 		return
 	}
 
 	if xToken != "" {
-		revokeToken(xToken, &logger)
+		revokeToken(xToken, secretKey, &logger)
 		return
 	}
 
@@ -61,9 +78,8 @@ func generateAesKey(keyLen int, logger *zerolog.Logger) string {
 	return aesKey
 }
 
-func generateToken(userId string, logger *zerolog.Logger) string {
-	userAesKey := readStdinAesKey(logger)
-	sst, err := sstapp.NewSSTokenOption(userAesKey, logger)
+func generateToken(userId, secretKey string, logger *zerolog.Logger) string {
+	sst, err := sstapp.NewSSTokenOption(secretKey, logger)
 	if err != nil {
 		logger.Error().Err(err).Send()
 		os.Exit(1)
@@ -78,9 +94,8 @@ func generateToken(userId string, logger *zerolog.Logger) string {
 	return token
 }
 
-func verifyToken(token string, logger *zerolog.Logger) bool {
-	userAesKey := readStdinAesKey(logger)
-	sst, err := sstapp.NewSSTokenOption(userAesKey, logger)
+func verifyToken(token, secretKey string, logger *zerolog.Logger) bool {
+	sst, err := sstapp.NewSSTokenOption(secretKey, logger)
 	if err != nil {
 		logger.Error().Err(err).Send()
 		os.Exit(1)
@@ -96,9 +111,8 @@ func verifyToken(token string, logger *zerolog.Logger) bool {
 	return true
 }
 
-func revokeToken(token string, logger *zerolog.Logger) bool {
-	userAesKey := readStdinAesKey(logger)
-	sst, err := sstapp.NewSSTokenOption(userAesKey, logger)
+func revokeToken(token, secretKey string, logger *zerolog.Logger) bool {
+	sst, err := sstapp.NewSSTokenOption(secretKey, logger)
 	if err != nil {
 		logger.Error().Err(err).Send()
 		os.Exit(1)
@@ -148,4 +162,28 @@ func readStdinAesKey(logger *zerolog.Logger) string {
 	}
 
 	return userAesKey
+}
+
+func readSecretFile(filepath string, logger *zerolog.Logger) (string, error) {
+	// read secret key yaml file, response is secret string
+
+	type KeyCfg struct {
+		Key string `yaml:"key"`
+	}
+
+	data, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		logger.Error().Err(err).Msg("read secret key yaml file failed")
+		return "", err
+	}
+
+	cfg := KeyCfg{}
+
+	err = yaml.Unmarshal(data, &cfg)
+	if err != nil {
+		logger.Error().Err(err).Msg("parse secret file failed")
+		return "", err
+	}
+
+	return cfg.Key, nil
 }

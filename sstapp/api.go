@@ -1,13 +1,13 @@
 package sstapp
 
 import (
-	"github.com/leyle/server-side-token/internal"
 	"time"
 )
 
 func (sst *SSTokenOption) GenerateToken(userId string) (string, error) {
 	srcUserId := encodeUserId(userId)
-	cipher, err := internal.Encrypt(sst.aesKey, srcUserId)
+	// cipher, err := internal.Encrypt(sst.aesKey, srcUserId)
+	cipher, err := sst.encrypt([]byte(srcUserId))
 	if err != nil {
 		sst.logger.Error().Err(err).Str("userId", userId).Msg("GenerateToken failed")
 		return "", err
@@ -42,7 +42,8 @@ func (sst *SSTokenOption) VerifyToken(token string) *OperateResult {
 	}
 
 	// 2. check if token can be decrypted
-	text, err := internal.Decrypt(sst.aesKey, cipher)
+	// text, err := internal.Decrypt(sst.aesKey, cipher)
+	text, err := sst.decrypt(cipher)
 	if err != nil {
 		sst.logger.Warn().Err(err).Str("token", token).Msg("decrypt aes token failed")
 		return checkTokenInvalid(token, "invalid token format", 0, ErrDecryptMsgFailed)

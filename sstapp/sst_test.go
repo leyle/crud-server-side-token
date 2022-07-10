@@ -47,9 +47,7 @@ func TestVerifyToken(t *testing.T) {
 func TestVerifyInvalidToken(t *testing.T) {
 	sst := getSSTOpt()
 
-	// token := "abcinvalidtoken"
-	// token := "4JqjLbYWaM2Fos0Tg-PgRYBiAm3rNS2WSnLvThKWvdC034JSkprv7rOhwyocIKnx"
-	token := "SST-SST-Ukuw_3pFVHZGzoWh2-2PM6_wUE2ZwEmXqhOhfHkQH1Nl8TzjiI3pkFREU0H2zbkJ"
+	token := "SST-8hg9zF/npLEuXuHFlO/drzM0O5e8iHM8RUNhCepgnyARkwCVM8UIa26IEdbnU8Lx"
 
 	result := sst.VerifyToken(token)
 

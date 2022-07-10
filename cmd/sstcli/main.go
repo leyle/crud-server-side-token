@@ -15,9 +15,9 @@ import (
 func main() {
 	// cli commands
 	// create ase key ./sstcli -createAesKey
-	// create token: ./sstcli -createToken userid
-	// verify token: ./sstcli -verifyToken token
-	// revoke token: ./sstcli -revokeToken token
+	// create token: ./sstcli -secretFile /path/to/key.yaml -createToken userid
+	// verify token: ./sstcli -secretFile /path/to/key.yaml -verifyToken token
+	// revoke token: ./sstcli -secretFile /path/to/key.yaml -revokeToken token
 
 	var aesKeyLen int
 	var userId string

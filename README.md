@@ -89,6 +89,13 @@ sst 使用了 `sqlite3`用来存储被 revoke 的 token 数据，这个文件的
 # 此例中为 ;d$d,ty8UZ<a:TA6$uVN
 2022-07-07T11:25:42+08:00 INF main.go:63 > Generate aesKey succeeded aesKey=;d$d,ty8UZ<a:TA6$uVN
 
+# 创建了此 key 后，可以保存起来，后续命令也可以使用，而其他程序集成此库时，如果已经用 cli 签发了 token，那么也要使用相同的 key 值。
+```
+
+**key.yaml** 例子
+
+```yaml
+key: "v}#0CEYuG%M8#c77HkUp"
 ```
 
 
@@ -102,27 +109,24 @@ sst 使用了 `sqlite3`用来存储被 revoke 的 token 数据，这个文件的
 # 1. 给谁创建 token，无论是其他 service，或者某个具体的 user，此处统一命名为 userId
 # 2. 签发 token 时使用的 aes 加密的 key 值
 
-# 在输入中，为了安全，aes key 不在 commond line 中输入，而是使用 stdin 输入的方式
+# 因为签发需要使用到 key，为了避免在 shell history 中看到输入的 key 值，使用从文件中读取 key
+# key.yaml 见上面
 
 # 例子
-./sstcli -createToken cdiservice
+./sstcli -secretFile /path/to/key.yaml -createToken cdiservice
 
-# 执行上面的命令后，会有个提示输入 aes key 的提示，程序会等待用户输入
-# 此时，可以输入一个 aes key 值，比如从上面的 create random aes key 处得到的一个 key 值
 # 需要特别注意的是，整个程序的生命周期中，一旦开始签发 token 后，aes key 应该妥善保存，并且不要变化（除非泄漏了），否则会造成已签发的 token 全部失效
 
-# 假设此时输入 ;d$d,ty8UZ<a:TA6$uVN
 # 如果整个程序没有问题，那么就会有大概如下的输出
-# 其中 `token=` 后面的值即为签发的 token 值
-./sstcli -createToken cdiservice
-2022-07-07T11:29:30+08:00 INF main.go:140 > input aes key:
-;d$d,ty8UZ<a:TA6$uVN
-2022-07-07T11:31:55+08:00 DBG ../../sstapp/db.go:35 > get sqlite db ok, db name[/tmp/sstcli.tmp.db]
-2022-07-07T11:31:55+08:00 DBG ../../sstapp/db.go:48 > create sqlite3 table, affected rows[0]
-2022-07-07T11:31:55+08:00 INF ../../sstapp/db.go:117 > load revoke list from sqlite succeed, total num[1]
-2022-07-07T11:31:55+08:00 TRC ../../sstapp/service.go:16 > GenerateToken succeed token=2_w9YiybBgjK2EeFo44b4seqKa2CHvbcr8hFTN2CXFbvcLwVOO5R7qePNEU3VY4t userId=cdiservice
-2022-07-07T11:31:55+08:00 INF ../../sstapp/service.go:17 > GenerateToken succeed userId=cdiservice
-2022-07-07T11:31:55+08:00 INF main.go:79 > token=2_w9YiybBgjK2EeFo44b4seqKa2CHvbcr8hFTN2CXFbvcLwVOO5R7qePNEU3VY4t
+# 其中 `token=` 后面的值以 SST- 开头的即为签发的 token 值
+# SST-aTUKdDiJczOu/8vPVLoeA9rN5m7aEpWIhL1Ue4gIb28aX7EWhJrNTFr8P9U5tCMt/A==
+./sstcli -secretFile /tmp/key.yaml -createToken cdiservice
+2022-07-10T16:38:39+08:00 DBG ../../sstapp/db.go:35 > get sqlite db ok, db name[/Users/hmac/.config/sst/sst.db]
+2022-07-10T16:38:39+08:00 DBG ../../sstapp/db.go:48 > create sqlite3 table, affected rows[0]
+2022-07-10T16:38:39+08:00 INF ../../sstapp/db.go:117 > load revocation list from sqlite succeed, total num[7]
+2022-07-10T16:38:39+08:00 TRC ../../sstapp/api.go:18 > GenerateToken succeed token=SST-1a2e5e90b045cd149017d6ea1ede7775bc6e1a578c671d7b7858c8970f7785d02eba574caa05f7cece692ace2a52014092 userId=cdiservice
+2022-07-10T16:38:39+08:00 INF ../../sstapp/api.go:19 > GenerateToken succeed userId=cdiservice
+2022-07-10T16:38:39+08:00 INF main.go:92 > token=SST-1a2e5e90b045cd149017d6ea1ede7775bc6e1a578c671d7b7858c8970f7785d02eba574caa05f7cece692ace2a52014092
 ```
 
 
@@ -137,34 +141,30 @@ sst 使用了 `sqlite3`用来存储被 revoke 的 token 数据，这个文件的
 # 此处展示一下执行过程，不做详细说明
 
 # valid token
-./sstcli -verifyToken 2_w9YiybBgjK2EeFo44b4seqKa2CHvbcr8hFTN2CXFbvcLwVOO5R7qePNEU3VY4t
-2022-07-07T11:36:19+08:00 INF main.go:140 > input aes key:
-;d$d,ty8UZ<a:TA6$uVN
-2022-07-07T11:36:29+08:00 DBG ../../sstapp/db.go:35 > get sqlite db ok, db name[/Users/hmac/.config/sstcli/sstcli.db]
-2022-07-07T11:36:29+08:00 DBG ../../sstapp/db.go:48 > create sqlite3 table, affected rows[0]
-2022-07-07T11:36:29+08:00 INF ../../sstapp/db.go:117 > load revoke list from sqlite succeed, total num[1]
-2022-07-07T11:36:29+08:00 DBG ../../sstapp/service.go:46 > verify token, decode succeed t=1657164715 userId=cdiservice
-2022-07-07T11:36:29+08:00 INF main.go:98 > token is valid token=2_w9YiybBgjK2EeFo44b4seqKa2CHvbcr8hFTN2CXFbvcLwVOO5R7qePNEU3VY4t userId=cdiservice
+./sstcli -secretFile /tmp/key.yaml -verifyToken SST-1a2e5e90b045cd149017d6ea1ede7775bc6e1a578c671d7b7858c8970f7785d02eba574caa05f7cece692ace2a52014092
+2022-07-10T16:39:30+08:00 DBG ../../sstapp/db.go:35 > get sqlite db ok, db name[/Users/hmac/.config/sst/sst.db]
+2022-07-10T16:39:30+08:00 DBG ../../sstapp/db.go:48 > create sqlite3 table, affected rows[0]
+2022-07-10T16:39:30+08:00 INF ../../sstapp/db.go:117 > load revocation list from sqlite succeed, total num[7]
+2022-07-10T16:39:30+08:00 DBG ../../sstapp/api.go:58 > verify token, decode succeed t=1657442319 userId=cdiservice
+2022-07-10T16:39:30+08:00 INF main.go:110 > token is valid token=SST-1a2e5e90b045cd149017d6ea1ede7775bc6e1a578c671d7b7858c8970f7785d02eba574caa05f7cece692ace2a52014092 userId=cdiservice
 
 # invalid token(aes key invalid)
-./sstcli -verifyToken 2_w9YiybBgjK2EeFo44b4seqKa2CHvbcr8hFTN2CXFbvcLwVOO5R7qePNEU3VY4t
-2022-07-07T11:36:57+08:00 INF main.go:140 > input aes key:
-abc
-2022-07-07T11:36:59+08:00 DBG ../../sstapp/db.go:35 > get sqlite db ok, db name[/Users/hmac/.config/sstcli/sstcli.db]
-2022-07-07T11:36:59+08:00 DBG ../../sstapp/db.go:48 > create sqlite3 table, affected rows[0]
-2022-07-07T11:36:59+08:00 INF ../../sstapp/db.go:117 > load revoke list from sqlite succeed, total num[1]
-2022-07-07T11:36:59+08:00 WRN ../../sstapp/service.go:36 > decrypt aes token failed error="unpad error. This could happen when incorrect encryption key is used" token=2_w9YiybBgjK2EeFo44b4seqKa2CHvbcr8hFTN2CXFbvcLwVOO5R7qePNEU3VY4t
-2022-07-07T11:36:59+08:00 WRN main.go:94 > invalid token, invalid token format, maybe wrong token, or maybe wrong aes key token=2_w9YiybBgjK2EeFo44b4seqKa2CHvbcr8hFTN2CXFbvcLwVOO5R7qePNEU3VY4t
+./sstcli -secretFile /tmp/key.yaml -verifyToken SST-1a2e5e90b045cd149017d6ea1ede7775bc6e1a578c671d7b7858c8970f7785d02eba574caa05f7cece692ace2a52014092
+2022-07-10T16:39:49+08:00 DBG ../../sstapp/db.go:35 > get sqlite db ok, db name[/Users/hmac/.config/sst/sst.db]
+2022-07-10T16:39:49+08:00 DBG ../../sstapp/db.go:48 > create sqlite3 table, affected rows[0]
+2022-07-10T16:39:49+08:00 INF ../../sstapp/db.go:117 > load revocation list from sqlite succeed, total num[7]
+2022-07-10T16:39:49+08:00 WRN ../../sstapp/model.go:137 > decrpyt cipher text failed error="cipher: message authentication failed"
+2022-07-10T16:39:49+08:00 WRN ../../sstapp/api.go:48 > decrypt aes token failed error="cipher: message authentication failed" token=SST-1a2e5e90b045cd149017d6ea1ede7775bc6e1a578c671d7b7858c8970f7785d02eba574caa05f7cece692ace2a52014092
+2022-07-10T16:39:49+08:00 WRN main.go:106 > invalid token, invalid token format, maybe wrong token, or maybe wrong aes key token=SST-1a2e5e90b045cd149017d6ea1ede7775bc6e1a578c671d7b7858c8970f7785d02eba574caa05f7cece692ace2a52014092
 
 # invalid token(token itself isn't valid)
-./sstcli -verifyToken invalidtoken
-2022-07-07T11:37:33+08:00 INF main.go:140 > input aes key:
-;d$d,ty8UZ<a:TA6$uVN
-2022-07-07T11:37:38+08:00 DBG ../../sstapp/db.go:35 > get sqlite db ok, db name[/Users/hmac/.config/sstcli/sstcli.db]
-2022-07-07T11:37:38+08:00 DBG ../../sstapp/db.go:48 > create sqlite3 table, affected rows[0]
-2022-07-07T11:37:38+08:00 INF ../../sstapp/db.go:117 > load revoke list from sqlite succeed, total num[1]
-2022-07-07T11:37:38+08:00 WRN ../../sstapp/service.go:36 > decrypt aes token failed error="blocksize must be multipe of decoded message length" token=invalidtoken
-2022-07-07T11:37:38+08:00 WRN main.go:94 > invalid token, invalid token format, maybe wrong token, or maybe wrong aes key token=invalidtoken
+./sstcli -secretFile /tmp/key.yaml -verifyToken SST-1a2e5e90b045cd149017d6ea1ede7775bc6e1a578c671d7b7858c8970f7785d02eba574caa05f7cece692ace2a52014093
+2022-07-10T16:40:09+08:00 DBG ../../sstapp/db.go:35 > get sqlite db ok, db name[/Users/hmac/.config/sst/sst.db]
+2022-07-10T16:40:09+08:00 DBG ../../sstapp/db.go:48 > create sqlite3 table, affected rows[0]
+2022-07-10T16:40:09+08:00 INF ../../sstapp/db.go:117 > load revocation list from sqlite succeed, total num[7]
+2022-07-10T16:40:09+08:00 WRN ../../sstapp/model.go:137 > decrpyt cipher text failed error="cipher: message authentication failed"
+2022-07-10T16:40:09+08:00 WRN ../../sstapp/api.go:48 > decrypt aes token failed error="cipher: message authentication failed" token=SST-1a2e5e90b045cd149017d6ea1ede7775bc6e1a578c671d7b7858c8970f7785d02eba574caa05f7cece692ace2a52014093
+2022-07-10T16:40:09+08:00 WRN main.go:106 > invalid token, invalid token format, maybe wrong token, or maybe wrong aes key token=SST-1a2e5e90b045cd149017d6ea1ede7775bc6e1a578c671d7b7858c8970f7785d02eba574caa05f7cece692ace2a52014093
 ```
 
 
@@ -177,16 +177,13 @@ abc
 # 与 create token 等类似
 # 需要注意的是，当 revoke 一个 valid token 时，会把此 token 值写入 sqlite3 数据库中
 # 所以，需要特别注意此数据库的路径
-# 默认的数据路径是 /tmp/
-./sstcli -revokeToken 2_w9YiybBgjK2EeFo44b4seqKa2CHvbcr8hFTN2CXFbvcLwVOO5R7qePNEU3VY4t
-2022-07-07T11:38:55+08:00 INF main.go:140 > input aes key:
-;d$d,ty8UZ<a:TA6$uVN
-2022-07-07T11:39:00+08:00 DBG ../../sstapp/db.go:35 > get sqlite db ok, db name[/Users/hmac/.config/sstcli/sstcli.db]
-2022-07-07T11:39:00+08:00 DBG ../../sstapp/db.go:48 > create sqlite3 table, affected rows[0]
-2022-07-07T11:39:00+08:00 INF ../../sstapp/db.go:117 > load revoke list from sqlite succeed, total num[1]
-2022-07-07T11:39:00+08:00 DBG ../../sstapp/service.go:46 > verify token, decode succeed t=1657164715 userId=cdiservice
-2022-07-07T11:39:00+08:00 INF ../../sstapp/db.go:88 > save token into revoke list succeed token=2_w9YiybBgjK2EeFo44b4seqKa2CHvbcr8hFTN2CXFbvcLwVOO5R7qePNEU3VY4t
-2022-07-07T11:39:00+08:00 INF main.go:120 > revoke token succeeded token=2_w9YiybBgjK2EeFo44b4seqKa2CHvbcr8hFTN2CXFbvcLwVOO5R7qePNEU3VY4t userId=
-
+# 默认的数据路径是 $HOME/.config/sst/sst.db
+./sstcli -secretFile /tmp/key.yaml -revokeToken SST-1a2e5e90b045cd149017d6ea1ede7775bc6e1a578c671d7b7858c8970f7785d02eba574caa05f7cece692ace2a52014092
+2022-07-10T16:40:43+08:00 DBG ../../sstapp/db.go:35 > get sqlite db ok, db name[/Users/hmac/.config/sst/sst.db]
+2022-07-10T16:40:43+08:00 DBG ../../sstapp/db.go:48 > create sqlite3 table, affected rows[0]
+2022-07-10T16:40:43+08:00 INF ../../sstapp/db.go:117 > load revocation list from sqlite succeed, total num[7]
+2022-07-10T16:40:43+08:00 DBG ../../sstapp/api.go:58 > verify token, decode succeed t=1657442319 userId=cdiservice
+2022-07-10T16:40:43+08:00 INF ../../sstapp/db.go:88 > save token into revocation list succeed token=SST-1a2e5e90b045cd149017d6ea1ede7775bc6e1a578c671d7b7858c8970f7785d02eba574caa05f7cece692ace2a52014092
+2022-07-10T16:40:43+08:00 INF main.go:131 > revoke token succeeded token=SST-1a2e5e90b045cd149017d6ea1ede7775bc6e1a578c671d7b7858c8970f7785d02eba574caa05f7cece692ace2a52014092 userId=
 ```
 

@@ -22,12 +22,12 @@ func TestGCMEncrypt(t *testing.T) {
 	t.Log(cipherText)
 	t.Log(string(cipherText))
 
-	t.Log(Base64EncodeCipherText(cipherText))
+	t.Log(HexEncodeCipherText(cipherText))
 }
 
 func TestGcmDecrypt(t *testing.T) {
 	cipherText := encrypt()
-	t.Log(Base64EncodeCipherText(cipherText))
+	t.Log(HexEncodeCipherText(cipherText))
 
 	text, err := GcmDecrypt(key, cipherText)
 	if err != nil {
@@ -38,10 +38,10 @@ func TestGcmDecrypt(t *testing.T) {
 	t.Log(string(text))
 }
 
-func TestGCMDecryptSRCBase64(t *testing.T) {
+func TestGCMDecryptSRCHex(t *testing.T) {
 	// raw := "B2h+HK3at6Yo0pkWbsTgMRx6gy7es9u70v9hVrvqOa/q85pk9jixgA=="
-	raw := "BLu20Mtix1bfceKx+TrCLM7oFEtAQK5JVAiC4q+kwyZX0eysBH8JwA=="
-	decodeBytes, err := Base64DecodeCipherString(raw)
+	raw := "8db8c7073975be91bf85801b5aa4711b11f046c7c18e7dc2a9a30ea209569044aec77abdb00ff13e"
+	decodeBytes, err := HexDecodeCipherString(raw)
 	if err != nil {
 		t.Error(err)
 	}
@@ -56,11 +56,11 @@ func TestGCMDecryptSRCBase64(t *testing.T) {
 
 func TestEncryptAndDecrypt(t *testing.T) {
 	cipherText := encrypt()
-	b64Str := Base64EncodeCipherText(cipherText)
+	b64Str := HexEncodeCipherText(cipherText)
 
 	t.Log(b64Str)
 
-	srcCipherText, err := Base64DecodeCipherString(b64Str)
+	srcCipherText, err := HexDecodeCipherString(b64Str)
 	if err != nil {
 		panic(err)
 	}

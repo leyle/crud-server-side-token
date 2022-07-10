@@ -120,13 +120,13 @@ func (sst *SSTokenOption) encrypt(userId []byte) (string, error) {
 		return "", err
 	}
 
-	b64str := internal.Base64EncodeCipherText(cipherText)
+	b64str := internal.HexEncodeCipherText(cipherText)
 
 	return b64str, nil
 }
 
 func (sst *SSTokenOption) decrypt(b64CipherText string) (string, error) {
-	cipherText, err := internal.Base64DecodeCipherString(b64CipherText)
+	cipherText, err := internal.HexDecodeCipherString(b64CipherText)
 	if err != nil {
 		sst.logger.Warn().Err(err).Msg("decode base64 cipher text failed")
 		return "", err

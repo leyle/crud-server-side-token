@@ -4,7 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"io"
 )
@@ -31,12 +31,12 @@ func GcmEncrypt(key, text []byte) ([]byte, error) {
 	return result, nil
 }
 
-func Base64EncodeCipherText(cipherText []byte) string {
-	return base64.StdEncoding.EncodeToString(cipherText)
+func HexEncodeCipherText(cipherText []byte) string {
+	return hex.EncodeToString(cipherText)
 }
 
-func Base64DecodeCipherString(msg string) ([]byte, error) {
-	cipherText, err := base64.StdEncoding.DecodeString(msg)
+func HexDecodeCipherString(msg string) ([]byte, error) {
+	cipherText, err := hex.DecodeString(msg)
 	return cipherText, err
 }
 

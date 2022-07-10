@@ -7,11 +7,13 @@ import (
 
 func (sst *SSTokenOption) GenerateToken(userId string) (string, error) {
 	srcUserId := encodeUserId(userId)
-	token, err := internal.Encrypt(sst.aesKey, srcUserId)
+	cipher, err := internal.Encrypt(sst.aesKey, srcUserId)
 	if err != nil {
 		sst.logger.Error().Err(err).Str("userId", userId).Msg("GenerateToken failed")
 		return "", err
 	}
+
+	token := sst.packSSToken(cipher)
 
 	sst.logger.Trace().Str("userId", userId).Str("token", token).Msg("GenerateToken succeed")
 	sst.logger.Info().Str("userId", userId).Msg("GenerateToken succeed")
@@ -19,8 +21,17 @@ func (sst *SSTokenOption) GenerateToken(userId string) (string, error) {
 }
 
 func (sst *SSTokenOption) VerifyToken(token string) *OperateResult {
+
+	// 0. check token format
 	// 1. token has been revoked
 	// 2. token cannot be decrypted
+
+	// 0. check token format
+	cipher, err := sst.unpackSSToken(token)
+	if err != nil {
+		sst.logger.Warn().Err(err).Msg("verify token failed")
+		return checkTokenInvalid(token, err.Error(), 0, err)
+	}
 
 	// 1. check if token has been revoked
 	for _, rt := range sst.revokeList {
@@ -31,7 +42,7 @@ func (sst *SSTokenOption) VerifyToken(token string) *OperateResult {
 	}
 
 	// 2. check if token can be decrypted
-	text, err := internal.Decrypt(sst.aesKey, token)
+	text, err := internal.Decrypt(sst.aesKey, cipher)
 	if err != nil {
 		sst.logger.Warn().Err(err).Str("token", token).Msg("decrypt aes token failed")
 		return checkTokenInvalid(token, "invalid token format", 0, ErrDecryptMsgFailed)
@@ -69,8 +80,8 @@ func (sst *SSTokenOption) RevokeToken(token string) *OperateResult {
 	}
 	sst.revokeList = append(sst.revokeList, rv)
 
-	// add token into db's revoke list
-	err := sst.insertIntoRevokeList(rv.token, rv.userId, rv.t)
+	// 3. add token into db's revocation list
+	err := sst.insertIntoRevocationList(rv.token, rv.userId, rv.t)
 	if err != nil {
 		sst.logger.Error().Err(err).Msg("revoke token failed")
 		return revokeTokenFailed(token, err.Error(), ErrSaveDBFailed)

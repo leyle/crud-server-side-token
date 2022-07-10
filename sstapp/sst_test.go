@@ -33,7 +33,11 @@ func TestVerifyToken(t *testing.T) {
 	sst := getSSTOpt()
 
 	// token := "nb98xra8HqsxlymV3M4vFcus8FJvUsSnrGD8kRt09fg6CAi5OpuJAkODKTiN1W5k"
-	token := "K8R1LPIiqHkxkrb-cA5Kwe3TUi86sgxnVrp1VNpfl04-p2iawOOOlAA6TnzmJvGk"
+	// token := "SST-8R1LPIiqHkxkrb-cA5Kwe3TUi86sgxnVrp1VNpfl04-p2iawOOOlAA6TnzmJvGk"
+	token, err := sst.GenerateToken("hello-cdi")
+	if err != nil {
+		t.Error(err)
+	}
 
 	result := sst.VerifyToken(token)
 	t.Log(result.OK)
@@ -45,7 +49,7 @@ func TestVerifyInvalidToken(t *testing.T) {
 
 	// token := "abcinvalidtoken"
 	// token := "4JqjLbYWaM2Fos0Tg-PgRYBiAm3rNS2WSnLvThKWvdC034JSkprv7rOhwyocIKnx"
-	token := "x-RPXB5KPImWEr9HhnzKkBTgbvHDy10UY6bF58wjTfXF91EpeVOxIxXc6Uc2cYGy"
+	token := "SST-SST-Ukuw_3pFVHZGzoWh2-2PM6_wUE2ZwEmXqhOhfHkQH1Nl8TzjiI3pkFREU0H2zbkJ"
 
 	result := sst.VerifyToken(token)
 
@@ -88,7 +92,7 @@ func TestSQLiteOpt(t *testing.T) {
 	t.Log(token)
 
 	// token = "_xMqRdnhyzBgYbnXeAuEa8CN5sMN8O_zIlIcDYLqAZQvp84zG93SsHGIILQb5wgU"
-	err = sst.insertIntoRevokeList(token, userId, time.Now().Unix())
+	err = sst.insertIntoRevocationList(token, userId, time.Now().Unix())
 	if err != nil {
 		t.Error(err)
 	}

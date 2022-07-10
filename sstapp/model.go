@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/rs/zerolog"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -18,6 +19,8 @@ const (
 	sqliteCfgPath    = ".config/sst"
 	sqliteDbFilename = "sst.db"
 )
+
+const sstPrefix = "SST-"
 
 type SSTokenOption struct {
 	aesKey     []byte
@@ -34,7 +37,7 @@ type OperateResult struct {
 	Token string
 	OK    bool
 	Msg   string
-	T     int64 // T means token last updated time
+	T     int64
 	Err   error
 }
 
@@ -70,7 +73,7 @@ func NewSSTokenOption(aesKey string, logger *zerolog.Logger) (*SSTokenOption, er
 	}
 
 	// load revoke list data into memory
-	err = sst.loadRevokeList()
+	err = sst.loadRevocationList()
 	if err != nil {
 		return nil, err
 	}
@@ -116,6 +119,20 @@ func (sst *SSTokenOption) getAesKey(key string) string {
 	m := md5.New()
 	m.Write([]byte(key))
 	return hex.EncodeToString(m.Sum(nil))
+}
+
+func (sst *SSTokenOption) packSSToken(cipher string) string {
+	return fmt.Sprintf("%s%s", sstPrefix, cipher)
+}
+
+func (sst *SSTokenOption) unpackSSToken(msg string) (string, error) {
+	if !strings.HasPrefix(msg, sstPrefix) {
+		return "", ErrInvalidTokenFormat
+	}
+
+	cutMsg := strings.SplitN(msg, sstPrefix, 2)
+
+	return cutMsg[1], nil
 }
 
 func checkTokenValid(token, userId string, t int64) *OperateResult {

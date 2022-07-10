@@ -7,11 +7,11 @@ import (
 )
 
 const (
-	dbTableRevokeList = "revoke_list"
+	dbTableRevokeList = "revocation_list"
 )
 
 const createRevokeTable string = `
-	CREATE TABLE IF NOT EXISTS revoke_list (
+	CREATE TABLE IF NOT EXISTS revocation_list (
 		id INTEGER NOT NULL PRIMARY KEY,
 	 	token TEXT UNIQUE,
 	 	userId TEXT,
@@ -49,7 +49,7 @@ func (sst *SSTokenOption) createTable() error {
 	return nil
 }
 
-func (sst *SSTokenOption) insertIntoRevokeList(token, userId string, t int64) error {
+func (sst *SSTokenOption) insertIntoRevocationList(token, userId string, t int64) error {
 	ctx := context.Background()
 	tx, err := sst.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -59,7 +59,7 @@ func (sst *SSTokenOption) insertIntoRevokeList(token, userId string, t int64) er
 	defer tx.Rollback()
 
 	var dataId int
-	row := tx.QueryRowContext(ctx, "SELECT id from revoke_list where token = ?", token)
+	row := tx.QueryRowContext(ctx, "SELECT id from revocation_list where token = ?", token)
 	err = row.Scan(&dataId)
 	if err != nil && err != sql.ErrNoRows {
 		sst.logger.Error().Err(err).Msg("query token from sqlite3 failed")
@@ -68,12 +68,12 @@ func (sst *SSTokenOption) insertIntoRevokeList(token, userId string, t int64) er
 
 	if dataId != 0 {
 		// return ok
-		sst.logger.Warn().Str("token", token).Msg("insert revoke token, token already revoked")
+		sst.logger.Warn().Str("token", token).Msg("insert revocation token, token already revoked")
 		return nil
 	}
 
 	// insert into db
-	_, err = tx.ExecContext(ctx, "INSERT INTO revoke_list(token, t, userId) VALUES(?, ?, ?)", token, t, userId)
+	_, err = tx.ExecContext(ctx, "INSERT INTO revocation_list(token, t, userId) VALUES(?, ?, ?)", token, t, userId)
 	if err != nil {
 		sst.logger.Error().Err(err).Msg("insert revoke list failed")
 		return err
@@ -85,20 +85,20 @@ func (sst *SSTokenOption) insertIntoRevokeList(token, userId string, t int64) er
 		return err
 	}
 
-	sst.logger.Info().Str("token", token).Msg("save token into revoke list succeed")
+	sst.logger.Info().Str("token", token).Msg("save token into revocation list succeed")
 	return nil
 }
 
-func (sst *SSTokenOption) loadRevokeList() error {
+func (sst *SSTokenOption) loadRevocationList() error {
 	if sst.db == nil {
 		err := sst.getDb()
 		if err != nil {
-			sst.logger.Error().Err(err).Msg("load revoke list failed")
+			sst.logger.Error().Err(err).Msg("load revocation list failed")
 			return err
 		}
 	}
 
-	rows, err := sst.db.Query("SELECT token, t, userId FROM revoke_list")
+	rows, err := sst.db.Query("SELECT token, t, userId FROM revocation_list")
 	if err != nil {
 		sst.logger.Error().Err(err).Msg("select from revoke list failed")
 		return err
@@ -114,6 +114,6 @@ func (sst *SSTokenOption) loadRevokeList() error {
 		sst.revokeList = append(sst.revokeList, rv)
 	}
 
-	sst.logger.Info().Msgf("load revoke list from sqlite succeed, total num[%d]", len(sst.revokeList))
+	sst.logger.Info().Msgf("load revocation list from sqlite succeed, total num[%d]", len(sst.revokeList))
 	return nil
 }

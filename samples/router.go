@@ -1,9 +1,12 @@
 package main
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/leyle/server-side-token/sstapp"
+)
 
 func SampleRouter(ctx *AppOption, g *gin.RouterGroup) {
-	auth := g.Group("", HandlerWrapper(Auth, ctx))
+	auth := g.Group("", sstapp.GinAuthMiddleware(ctx.SST))
 
 	sampleR := auth.Group("/samples")
 	{
@@ -13,7 +16,7 @@ func SampleRouter(ctx *AppOption, g *gin.RouterGroup) {
 }
 
 func SSTRouter(ctx *AppOption, g *gin.RouterGroup) {
-	auth := g.Group("", HandlerWrapper(Auth, ctx))
+	auth := g.Group("", sstapp.GinAuthMiddleware(ctx.SST))
 
 	sstR := auth.Group("/ssts")
 	{
@@ -21,4 +24,14 @@ func SSTRouter(ctx *AppOption, g *gin.RouterGroup) {
 		sstR.POST("/sst", HandlerWrapper(CreateSSTHandler, ctx))
 	}
 
+}
+
+func SST2Router(ctx *AppOption, g *gin.RouterGroup) {
+	auth := g.Group("", sstapp.GinAuthMiddleware(ctx.SST))
+
+	sst2R := auth.Group("/sst2")
+	{
+		// create server side token
+		sst2R.POST("/sst", HandlerWrapper(CreateSSTHandler, ctx))
+	}
 }

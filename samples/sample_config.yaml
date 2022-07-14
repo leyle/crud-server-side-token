@@ -11,4 +11,6 @@ sst:
 log:
   # line -> console log with color
   # json -> console log, but json structure
-  format: "json"
+  format: "line"
+  # trace / debug / info / warn / error / fatal / panic / disabled
+  level: "trace"

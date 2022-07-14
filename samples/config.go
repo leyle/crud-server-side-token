@@ -23,4 +23,5 @@ type SSTOption struct {
 
 type LogOption struct {
 	Format string `yaml:"format"`
+	Level  string `yaml:"level"`
 }

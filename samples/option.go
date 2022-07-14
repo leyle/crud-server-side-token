@@ -28,20 +28,9 @@ func NewAppOption(conf *Config, sst *sstapp.SSTokenOption) *AppOption {
 	return op
 }
 
-func (op *AppOption) New(c *gin.Context) *AppOption {
-	logger := zerolog.Ctx(c.Request.Context())
-	ctx := &AppOption{
-		C:      c,
-		Logger: logger,
-		Conf:   op.Conf,
-		SST:    op.SST,
-	}
-	return ctx
-}
-
 func HandlerWrapper(f func(ctx *AppOption), ctx *AppOption) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		nctx := ctx.New(c)
-		f(nctx)
+		ctx.C = c
+		f(ctx)
 	}
 }

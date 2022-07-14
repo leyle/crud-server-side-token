@@ -8,6 +8,7 @@ import (
 	"github.com/leyle/go-api-starter/ginhelper"
 	"github.com/leyle/go-api-starter/logmiddleware"
 	"github.com/leyle/server-side-token/sstapp"
+	"github.com/rs/zerolog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -40,8 +41,15 @@ func main() {
 		logFormat = logmiddleware.LogTargetStdout
 	}
 	logger := logmiddleware.GetLogger(logFormat)
-
 	logger.Debug().Str("selfName", conf.SST.ServiceName).Send()
+
+	logLevel, err := zerolog.ParseLevel(conf.Log.Level)
+	if err != nil {
+		logger.Error().Err(err).Msg("parse log level failed, valid log level are: trace / debug / info / warn / error / fatal / panic")
+		os.Exit(1)
+	}
+
+	zerolog.SetGlobalLevel(logLevel)
 
 	// initial server side token
 	aesKey := conf.SST.AesKey
@@ -93,6 +101,8 @@ func httpServer(ctx *AppOption) {
 
 	// sst manage api
 	SSTRouter(ctx, router.Group(""))
+
+	SST2Router(ctx, router.Group(""))
 
 	addr := ctx.Conf.Server.ListenServerAddr()
 	err := e.Run(addr)

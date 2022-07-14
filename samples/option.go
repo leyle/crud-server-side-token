@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/leyle/go-api-starter/logmiddleware"
 	"github.com/leyle/server-side-token/sstapp"
 	"github.com/rs/zerolog"
 )
@@ -13,7 +14,12 @@ type AppOption struct {
 	SST    *sstapp.SSTokenOption
 }
 
-func NewAppOption(conf *Config, sst *sstapp.SSTokenOption, logger zerolog.Logger) *AppOption {
+func NewAppOption(conf *Config, sst *sstapp.SSTokenOption) *AppOption {
+	logFormat := logmiddleware.LogTargetConsole
+	if conf.Log.Format == LogFormatJson {
+		logFormat = logmiddleware.LogTargetStdout
+	}
+	logger := logmiddleware.GetLogger(logFormat)
 	op := &AppOption{
 		Conf:   conf,
 		SST:    sst,
@@ -28,7 +34,7 @@ func (op *AppOption) New(c *gin.Context) *AppOption {
 		C:      c,
 		Logger: logger,
 		Conf:   op.Conf,
-		SST:    op.SST.Copy(logger),
+		SST:    op.SST,
 	}
 	return ctx
 }

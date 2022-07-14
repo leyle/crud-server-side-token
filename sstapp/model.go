@@ -3,6 +3,7 @@ package sstapp
 import (
 	"database/sql"
 	"fmt"
+	"github.com/leyle/go-api-starter/logmiddleware"
 	"github.com/leyle/server-side-token/internal"
 	"github.com/rs/zerolog"
 	"os"
@@ -17,6 +18,10 @@ const (
 const (
 	sqliteCfgPath    = ".config/sst"
 	sqliteDbFilename = "sst.db"
+)
+
+const (
+	CtxDBFile = "sst-db"
 )
 
 const sstPrefix = "SST-"
@@ -46,10 +51,11 @@ type revokedToken struct {
 	t      int64
 }
 
-func NewSSTokenOption(aesKey string, logger *zerolog.Logger) (*SSTokenOption, error) {
+func NewSSTokenOption(aesKey string) (*SSTokenOption, error) {
+	logger := logmiddleware.GetLogger(logmiddleware.LogTargetConsole)
 	sst := &SSTokenOption{
 		aesKey:     []byte(aesKey),
-		logger:     logger,
+		logger:     &logger,
 		revokeList: make([]*revokedToken, 0),
 	}
 
@@ -101,16 +107,6 @@ func (sst *SSTokenOption) insureSqliteFile() error {
 
 func (sst *SSTokenOption) SqliteFilePath() string {
 	return sst.sqliteFile
-}
-
-func (sst *SSTokenOption) Copy(logger *zerolog.Logger) *SSTokenOption {
-	netSST := &SSTokenOption{
-		aesKey:     sst.aesKey,
-		sqliteFile: sst.sqliteFile,
-		logger:     logger,
-		revokeList: sst.revokeList,
-	}
-	return netSST
 }
 
 func (sst *SSTokenOption) encrypt(userId []byte) (string, error) {

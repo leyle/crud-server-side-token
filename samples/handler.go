@@ -29,7 +29,7 @@ func CreateSSTHandler(ctx *AppOption) {
 		return
 	}
 
-	token, err := ctx.SST.GenerateToken(form.UserId)
+	token, err := ctx.SST.GenerateToken(ctx.C.Request.Context(), form.UserId)
 	ginhelper.StopExec(err)
 
 	resp := gin.H{

@@ -47,16 +47,18 @@ func main() {
 		fmt.Println("invalid sst(server side token) config values, aesKey is empty")
 		os.Exit(1)
 	}
-	sst, err := sstapp.NewSSTokenOption(aesKey, &logger)
+	sst, err := sstapp.NewSSTokenOption(aesKey)
 	if err != nil {
 		fmt.Println("create server side token object failed")
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
+	ctx := context.Background()
+	ctx = logger.WithContext(ctx)
 	if selfToken != "" {
 		fmt.Println("create itself server side token...")
-		selfTokenVal, err := sst.GenerateToken(selfToken)
+		selfTokenVal, err := sst.GenerateToken(ctx, selfToken)
 		if err != nil {
 			fmt.Println("generate itself server side token failed")
 			os.Exit(1)
@@ -67,7 +69,7 @@ func main() {
 	}
 
 	// start http server
-	ap := NewAppOption(conf, sst, logger)
+	ap := NewAppOption(conf, sst)
 
 	go httpServer(ap)
 

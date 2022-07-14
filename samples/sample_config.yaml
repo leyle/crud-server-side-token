@@ -5,8 +5,6 @@ server:
 
 sst:
   aesKey: "Jzw8C%E/y,FSK4<}n?"
-  # selfToken created by itself, usage: ./sample -c /path/to/conf.yaml -t userid
-  selfToken: "HjLPYffNPbeGQeyGh8XJzTShur9uBDzmb9jw5S-C1pwPrvGafDOo6G6kx84CFUme"
 
 log:
   # line -> console log with color

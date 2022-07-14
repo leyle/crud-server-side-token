@@ -13,7 +13,7 @@ func Auth(ctx *AppOption) {
 		return
 	}
 
-	result := ctx.SST.VerifyToken(token)
+	result := ctx.SST.VerifyToken(ctx.C.Request.Context(), token)
 	if !result.OK {
 		ctx.Logger.Warn().Msgf("invalid token[%s], %s", token, result.Msg)
 		ginhelper.Return401Json(ctx.C, result.Msg)

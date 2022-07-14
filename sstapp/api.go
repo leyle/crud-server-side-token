@@ -1,10 +1,14 @@
 package sstapp
 
 import (
+	"context"
+	"github.com/rs/zerolog"
 	"time"
 )
 
-func (sst *SSTokenOption) GenerateToken(userId string) (string, error) {
+func (sst *SSTokenOption) GenerateToken(ctx context.Context, userId string) (string, error) {
+	sst.logger = zerolog.Ctx(ctx)
+
 	srcUserId := encodeUserId(userId)
 	// cipher, err := internal.Encrypt(sst.aesKey, srcUserId)
 	cipher, err := sst.encrypt([]byte(srcUserId))
@@ -20,7 +24,8 @@ func (sst *SSTokenOption) GenerateToken(userId string) (string, error) {
 	return token, nil
 }
 
-func (sst *SSTokenOption) VerifyToken(token string) *OperateResult {
+func (sst *SSTokenOption) VerifyToken(ctx context.Context, token string) *OperateResult {
+	sst.logger = zerolog.Ctx(ctx)
 
 	// 0. check token format
 	// 1. token has been revoked
@@ -59,13 +64,14 @@ func (sst *SSTokenOption) VerifyToken(token string) *OperateResult {
 	return checkTokenValid(token, userId, createdAt)
 }
 
-func (sst *SSTokenOption) RevokeToken(token string) *OperateResult {
+func (sst *SSTokenOption) RevokeToken(ctx context.Context, token string) *OperateResult {
+	sst.logger = zerolog.Ctx(ctx)
 	// 1. check token is valid
 	// 2. add token to revokeList
 	// 3. add token to revoke list sqlite3
 
 	// 1. check token is valid
-	result := sst.VerifyToken(token)
+	result := sst.VerifyToken(ctx, token)
 	if !result.OK {
 		sst.logger.Warn().Str("token", token).Msgf("revoke token, but token is invalid[%s|%d]", result.Msg, result.T)
 		return revokeTokenFailed(token, result.Msg, result.Err)

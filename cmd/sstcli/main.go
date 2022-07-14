@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"flag"
 	"fmt"
@@ -11,6 +12,8 @@ import (
 	"io/ioutil"
 	"os"
 )
+
+var logger = logmiddleware.GetLogger(logmiddleware.LogTargetConsole)
 
 func main() {
 	// cli commands
@@ -33,8 +36,6 @@ func main() {
 	flag.StringVar(&secretFile, "secretFile", "", "-secretFile /some/yaml/file/path")
 
 	flag.Parse()
-
-	logger := logmiddleware.GetLogger(logmiddleware.LogTargetConsole)
 
 	if aesKeyLen > 0 {
 		generateAesKey(aesKeyLen, &logger)
@@ -59,12 +60,12 @@ func main() {
 	}
 
 	if vToken != "" {
-		verifyToken(vToken, secretKey, &logger)
+		verifyToken(vToken, secretKey)
 		return
 	}
 
 	if xToken != "" {
-		revokeToken(xToken, secretKey, &logger)
+		revokeToken(xToken, secretKey)
 		return
 	}
 
@@ -79,12 +80,12 @@ func generateAesKey(keyLen int, logger *zerolog.Logger) string {
 }
 
 func generateToken(userId, secretKey string, logger *zerolog.Logger) string {
-	sst, err := sstapp.NewSSTokenOption(secretKey, logger)
+	sst, err := sstapp.NewSSTokenOption(secretKey)
 	if err != nil {
 		logger.Error().Err(err).Send()
 		os.Exit(1)
 	}
-	token, err := sst.GenerateToken(userId)
+	token, err := sst.GenerateToken(getContext(), userId)
 	if err != nil {
 		logger.Error().Err(err).Send()
 		os.Exit(1)
@@ -94,14 +95,14 @@ func generateToken(userId, secretKey string, logger *zerolog.Logger) string {
 	return token
 }
 
-func verifyToken(token, secretKey string, logger *zerolog.Logger) bool {
-	sst, err := sstapp.NewSSTokenOption(secretKey, logger)
+func verifyToken(token, secretKey string) bool {
+	sst, err := sstapp.NewSSTokenOption(secretKey)
 	if err != nil {
 		logger.Error().Err(err).Send()
 		os.Exit(1)
 	}
 
-	result := sst.VerifyToken(token)
+	result := sst.VerifyToken(getContext(), token)
 	if !result.OK {
 		logger.Warn().Str("token", token).Msgf("invalid token, %s, maybe wrong token, or maybe wrong aes key", result.Msg)
 		return false
@@ -111,14 +112,14 @@ func verifyToken(token, secretKey string, logger *zerolog.Logger) bool {
 	return true
 }
 
-func revokeToken(token, secretKey string, logger *zerolog.Logger) bool {
-	sst, err := sstapp.NewSSTokenOption(secretKey, logger)
+func revokeToken(token, secretKey string) bool {
+	sst, err := sstapp.NewSSTokenOption(secretKey)
 	if err != nil {
 		logger.Error().Err(err).Send()
 		os.Exit(1)
 	}
 
-	result := sst.RevokeToken(token)
+	result := sst.RevokeToken(getContext(), token)
 	if !result.OK {
 		if result.Err == sstapp.ErrRevokeAlreadyRevoked {
 			logger.Info().Str("token", token).Msg("revoke token succeeded")
@@ -186,4 +187,11 @@ func readSecretFile(filepath string, logger *zerolog.Logger) (string, error) {
 	}
 
 	return cfg.Key, nil
+}
+
+func getContext() context.Context {
+	reqId := logmiddleware.GenerateReqId()
+	logger = logger.With().Str("reqId", reqId).Logger()
+	lctx := logger.WithContext(context.Background())
+	return lctx
 }

@@ -20,16 +20,12 @@ const (
 	sqliteDbFilename = "sst.db"
 )
 
-const (
-	CtxDBFile = "sst-db"
-)
-
-const sstPrefix = "SST-"
-
 type SSTokenOption struct {
 	aesKey     []byte
 	sqliteFile string
 	logger     *zerolog.Logger
+
+	tokenPrefix string
 
 	db         *sql.DB
 	revokeList []*revokedToken
@@ -51,13 +47,25 @@ type revokedToken struct {
 	t      int64
 }
 
-func NewSSTokenOption(aesKey string) (*SSTokenOption, error) {
+func NewSSTokenOption(serviceName, aesKey string) (*SSTokenOption, error) {
 	logger := logmiddleware.GetLogger(logmiddleware.LogTargetConsole)
+
+	if serviceName == "" {
+		logger.Error().Msg("service name or aes key can't be empty string")
+		return nil, ErrServiceNameEmpty
+	}
+
+	if aesKey == "" {
+		logger.Error().Msg("aes key can't be empty string")
+		return nil, ErrAesKeyEmpty
+	}
+
 	sst := &SSTokenOption{
 		aesKey:     []byte(aesKey),
 		logger:     &logger,
 		revokeList: make([]*revokedToken, 0),
 	}
+	sst.tokenPrefix = sst.getTokenPrefix(serviceName)
 
 	err := sst.insureSqliteFile()
 	if err != nil {
@@ -109,6 +117,12 @@ func (sst *SSTokenOption) SqliteFilePath() string {
 	return sst.sqliteFile
 }
 
+func (sst *SSTokenOption) getTokenPrefix(service string) string {
+	upperCase := strings.ToUpper(service)
+	prefix := fmt.Sprintf("%s%s-", "SST-", upperCase)
+	return prefix
+}
+
 func (sst *SSTokenOption) encrypt(userId []byte) (string, error) {
 	cipherText, err := internal.GcmEncrypt(sst.aesKey, userId)
 	if err != nil {
@@ -130,7 +144,7 @@ func (sst *SSTokenOption) decrypt(b64CipherText string) (string, error) {
 
 	plainBytes, err := internal.GcmDecrypt(sst.aesKey, cipherText)
 	if err != nil {
-		sst.logger.Warn().Err(err).Msg("decrpyt cipher text failed")
+		sst.logger.Warn().Err(err).Msg("decrypt cipher text failed")
 		return "", err
 	}
 
@@ -138,15 +152,15 @@ func (sst *SSTokenOption) decrypt(b64CipherText string) (string, error) {
 }
 
 func (sst *SSTokenOption) packSSToken(cipher string) string {
-	return fmt.Sprintf("%s%s", sstPrefix, cipher)
+	return fmt.Sprintf("%s%s", sst.tokenPrefix, cipher)
 }
 
 func (sst *SSTokenOption) unpackSSToken(msg string) (string, error) {
-	if !strings.HasPrefix(msg, sstPrefix) {
+	if !strings.HasPrefix(msg, sst.tokenPrefix) {
 		return "", ErrInvalidTokenFormat
 	}
 
-	cutMsg := strings.SplitN(msg, sstPrefix, 2)
+	cutMsg := strings.SplitN(msg, sst.tokenPrefix, 2)
 
 	return cutMsg[1], nil
 }

@@ -17,7 +17,8 @@ type Config struct {
 }
 
 type SSTOption struct {
-	AesKey string `yaml:"aesKey"`
+	AesKey      string `yaml:"aesKey"`
+	ServiceName string `yaml:"serviceName"`
 }
 
 type LogOption struct {

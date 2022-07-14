@@ -15,6 +15,11 @@ import (
 
 var logger = logmiddleware.GetLogger(logmiddleware.LogTargetConsole)
 
+var (
+	serviceName string
+	secretKey   string
+)
+
 func main() {
 	// cli commands
 	// create ase key ./sstcli -createAesKey
@@ -49,23 +54,25 @@ func main() {
 		os.Exit(1)
 	}
 
-	secretKey, err := readSecretFile(secretFile, &logger)
+	cfg, err := readSecretFile(secretFile, &logger)
 	if err != nil {
 		os.Exit(1)
 	}
+	secretKey = cfg.AesKey
+	serviceName = cfg.ServiceName
 
 	if userId != "" {
-		generateToken(userId, secretKey, &logger)
+		generateToken(userId)
 		return
 	}
 
 	if vToken != "" {
-		verifyToken(vToken, secretKey)
+		verifyToken(vToken)
 		return
 	}
 
 	if xToken != "" {
-		revokeToken(xToken, secretKey)
+		revokeToken(xToken)
 		return
 	}
 
@@ -79,8 +86,8 @@ func generateAesKey(keyLen int, logger *zerolog.Logger) string {
 	return aesKey
 }
 
-func generateToken(userId, secretKey string, logger *zerolog.Logger) string {
-	sst, err := sstapp.NewSSTokenOption(secretKey)
+func generateToken(userId string) string {
+	sst, err := sstapp.NewSSTokenOption(serviceName, secretKey)
 	if err != nil {
 		logger.Error().Err(err).Send()
 		os.Exit(1)
@@ -95,8 +102,8 @@ func generateToken(userId, secretKey string, logger *zerolog.Logger) string {
 	return token
 }
 
-func verifyToken(token, secretKey string) bool {
-	sst, err := sstapp.NewSSTokenOption(secretKey)
+func verifyToken(token string) bool {
+	sst, err := sstapp.NewSSTokenOption(serviceName, secretKey)
 	if err != nil {
 		logger.Error().Err(err).Send()
 		os.Exit(1)
@@ -112,8 +119,8 @@ func verifyToken(token, secretKey string) bool {
 	return true
 }
 
-func revokeToken(token, secretKey string) bool {
-	sst, err := sstapp.NewSSTokenOption(secretKey)
+func revokeToken(token string) bool {
+	sst, err := sstapp.NewSSTokenOption(serviceName, secretKey)
 	if err != nil {
 		logger.Error().Err(err).Send()
 		os.Exit(1)
@@ -165,17 +172,17 @@ func readStdinAesKey(logger *zerolog.Logger) string {
 	return userAesKey
 }
 
-func readSecretFile(filepath string, logger *zerolog.Logger) (string, error) {
+type KeyCfg struct {
+	ServiceName string `yaml:"serviceName"`
+	AesKey      string `yaml:"aesKey"`
+}
+
+func readSecretFile(filepath string, logger *zerolog.Logger) (*KeyCfg, error) {
 	// read secret key yaml file, response is secret string
-
-	type KeyCfg struct {
-		Key string `yaml:"key"`
-	}
-
 	data, err := ioutil.ReadFile(filepath)
 	if err != nil {
 		logger.Error().Err(err).Msg("read secret key yaml file failed")
-		return "", err
+		return nil, err
 	}
 
 	cfg := KeyCfg{}
@@ -183,10 +190,10 @@ func readSecretFile(filepath string, logger *zerolog.Logger) (string, error) {
 	err = yaml.Unmarshal(data, &cfg)
 	if err != nil {
 		logger.Error().Err(err).Msg("parse secret file failed")
-		return "", err
+		return nil, err
 	}
 
-	return cfg.Key, nil
+	return &cfg, nil
 }
 
 func getContext() context.Context {

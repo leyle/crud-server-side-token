@@ -10,9 +10,11 @@ import (
 
 const CtxLoggerName = "x-req-id"
 
+const serviceName = "library"
+
 func getSSTOpt() *SSTokenOption {
 	aesKey := "Jzw8C%E/y,FSK4<}n?"
-	sst, err := NewSSTokenOption(aesKey)
+	sst, err := NewSSTokenOption(serviceName, aesKey)
 	if err != nil {
 		panic(err)
 	}

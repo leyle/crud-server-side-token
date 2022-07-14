@@ -41,13 +41,15 @@ func main() {
 	}
 	logger := logmiddleware.GetLogger(logFormat)
 
+	logger.Debug().Str("selfName", conf.SST.ServiceName).Send()
+
 	// initial server side token
 	aesKey := conf.SST.AesKey
 	if aesKey == "" {
 		fmt.Println("invalid sst(server side token) config values, aesKey is empty")
 		os.Exit(1)
 	}
-	sst, err := sstapp.NewSSTokenOption(aesKey)
+	sst, err := sstapp.NewSSTokenOption(conf.SST.ServiceName, aesKey)
 	if err != nil {
 		fmt.Println("create server side token object failed")
 		fmt.Println(err)

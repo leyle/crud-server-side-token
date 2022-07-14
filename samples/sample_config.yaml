@@ -5,6 +5,8 @@ server:
 
 sst:
   aesKey: "Jzw8C%E/y,FSK4<}n?"
+  # service name, case-insensitive
+  serviceName: "sample"
 
 log:
   # line -> console log with color

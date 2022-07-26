@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/leyle/go-api-starter/logmiddleware"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 )
@@ -38,11 +39,11 @@ func TestGenerateToken(t *testing.T) {
 
 	userId := "cdi-service"
 
-	token, err := sst.GenerateToken(ctx, userId)
-	if err != nil {
-		t.Error(err)
+	result := sst.GenerateToken(ctx, userId)
+	if result.Err != nil {
+		t.Error(result.Err)
 	}
-	t.Log(token)
+	t.Log(result.Token)
 }
 
 func TestRunTimes(t *testing.T) {
@@ -60,12 +61,12 @@ func TestVerifyToken(t *testing.T) {
 
 	// token := "nb98xra8HqsxlymV3M4vFcus8FJvUsSnrGD8kRt09fg6CAi5OpuJAkODKTiN1W5k"
 	// token := "SST-8R1LPIiqHkxkrb-cA5Kwe3TUi86sgxnVrp1VNpfl04-p2iawOOOlAA6TnzmJvGk"
-	token, err := sst.GenerateToken(ctx, "hello-cdi")
-	if err != nil {
-		t.Error(err)
+	cresult := sst.GenerateToken(ctx, "hello-cdi")
+	if cresult.Err != nil {
+		t.Error(cresult.Err)
 	}
 
-	result := sst.VerifyToken(ctx, token)
+	result := sst.VerifyToken(ctx, cresult.Token)
 	t.Log(result.OK)
 	t.Log(result)
 }
@@ -91,13 +92,13 @@ func TestRevokeToken(t *testing.T) {
 
 	userId := "cdi-service"
 
-	token, err := sst.GenerateToken(ctx, userId)
-	if err != nil {
-		t.Error(err)
+	cresult := sst.GenerateToken(ctx, userId)
+	if cresult.Err != nil {
+		t.Error(cresult.Err)
 	}
-	t.Log(token)
+	t.Log(cresult.Token)
 
-	result := sst.RevokeToken(ctx, token)
+	result := sst.RevokeToken(ctx, cresult.Token)
 	t.Log(result)
 
 	for _, rv := range sst.revokeList {
@@ -112,30 +113,46 @@ func TestSQLiteOpt(t *testing.T) {
 
 	userId := "cdi-service"
 
-	token, err := sst.GenerateToken(ctx, userId)
-	if err != nil {
-		t.Error(err)
+	cresult := sst.GenerateToken(ctx, userId)
+	if cresult.Err != nil {
+		t.Error(cresult.Err)
 	}
-	t.Log(token)
+	t.Log(cresult.Token)
 
 	// token = "_xMqRdnhyzBgYbnXeAuEa8CN5sMN8O_zIlIcDYLqAZQvp84zG93SsHGIILQb5wgU"
-	err = sst.insertIntoRevocationList(token, userId, time.Now().Unix())
+	err := sst.insertIntoRevocationList(cresult.Token, userId, time.Now().Unix())
 	if err != nil {
 		t.Error(err)
 	}
 }
 
+func TestSingleTon(t *testing.T) {
+	count := 5
+	var wg sync.WaitGroup
+
+	createSST := func() {
+		defer wg.Done()
+		getSSTOpt()
+	}
+
+	for i := 0; i < count; i++ {
+		wg.Add(1)
+		go createSST()
+	}
+
+	wg.Wait()
+}
+
 func BenchmarkGenerateToken(b *testing.B) {
-	var err error
 	ctx := getContext()
 	sst := getSSTOpt()
 
 	userId := "cdi-service"
 
 	for n := 0; n < b.N; n++ {
-		_, err = sst.GenerateToken(ctx, userId)
-		if err != nil {
-			b.Error(err)
+		result := sst.GenerateToken(ctx, userId)
+		if result.Err != nil {
+			b.Error(result.Err)
 		}
 		// b.Log(token)
 	}
@@ -149,7 +166,7 @@ func BenchmarkRevokeToken(b *testing.B) {
 		// create token then revoke it
 		userId := strconv.FormatInt(time.Now().Unix(), 10)
 
-		token, _ := sst.GenerateToken(ctx, userId)
-		sst.RevokeToken(ctx, token)
+		result := sst.GenerateToken(ctx, userId)
+		sst.RevokeToken(ctx, result.Token)
 	}
 }

@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func (sst *SSTokenOption) GenerateToken(ctx context.Context, userId string) (string, error) {
+func (sst *SSTokenOption) GenerateToken(ctx context.Context, userId string) *OperateResult {
 	sst.logger = zerolog.Ctx(ctx)
 
 	srcUserId := encodeUserId(userId)
@@ -14,14 +14,14 @@ func (sst *SSTokenOption) GenerateToken(ctx context.Context, userId string) (str
 	cipher, err := sst.encrypt([]byte(srcUserId))
 	if err != nil {
 		sst.logger.Error().Err(err).Str("userId", userId).Msg("GenerateToken failed")
-		return "", err
+		return createTokenFailed(userId, err.Error(), err)
 	}
 
 	token := sst.packSSToken(cipher)
 
 	sst.logger.Trace().Str("userId", userId).Str("token", token).Msg("GenerateToken succeed")
 	sst.logger.Info().Str("userId", userId).Msg("GenerateToken succeed")
-	return token, nil
+	return createTokenOK(token, userId)
 }
 
 func (sst *SSTokenOption) VerifyToken(ctx context.Context, token string) *OperateResult {
@@ -94,5 +94,5 @@ func (sst *SSTokenOption) RevokeToken(ctx context.Context, token string) *Operat
 		return revokeTokenFailed(token, err.Error(), ErrSaveDBFailed)
 	}
 
-	return revokeTokenSucceed(token, rv.t)
+	return revokeTokenOK(token, rv.t)
 }

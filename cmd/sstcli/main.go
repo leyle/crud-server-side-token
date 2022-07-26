@@ -92,14 +92,14 @@ func generateToken(userId string) string {
 		logger.Error().Err(err).Send()
 		os.Exit(1)
 	}
-	token, err := sst.GenerateToken(getContext(), userId)
-	if err != nil {
+	result := sst.GenerateToken(getContext(), userId)
+	if result.Err != nil {
 		logger.Error().Err(err).Send()
 		os.Exit(1)
 	}
-	logger.Info().Str("token", token).Send()
+	logger.Info().Str("token", result.Token).Send()
 
-	return token
+	return result.Token
 }
 
 func verifyToken(token string) bool {

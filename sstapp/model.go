@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
@@ -19,6 +20,9 @@ const (
 	sqliteCfgPath    = ".config/sst"
 	sqliteDbFilename = "sst.db"
 )
+
+var singleSST *SSTokenOption
+var lock = &sync.RWMutex{}
 
 type SSTokenOption struct {
 	aesKey     []byte
@@ -49,6 +53,19 @@ type revokedToken struct {
 
 func NewSSTokenOption(serviceName, aesKey string) (*SSTokenOption, error) {
 	logger := logmiddleware.GetLogger(logmiddleware.LogTargetConsole)
+
+	if singleSST != nil {
+		logger.Info().Msg("sst token instance already created")
+		return singleSST, nil
+	}
+
+	lock.Lock()
+	defer lock.Unlock()
+
+	if singleSST != nil {
+		logger.Info().Msg("sst token instance already created")
+		return singleSST, nil
+	}
 
 	if serviceName == "" {
 		logger.Error().Msg("service name or aes key can't be empty string")
@@ -89,6 +106,10 @@ func NewSSTokenOption(serviceName, aesKey string) (*SSTokenOption, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	singleSST = sst
+
+	logger.Info().Msg("create new server side token instance successfully")
 
 	return sst, nil
 }
@@ -165,6 +186,27 @@ func (sst *SSTokenOption) unpackSSToken(msg string) (string, error) {
 	return cutMsg[1], nil
 }
 
+func createTokenOK(token, userId string) *OperateResult {
+	result := &OperateResult{
+		Token: token,
+		OK:    true,
+		Msg:   userId,
+		T:     time.Now().Unix(),
+	}
+	return result
+}
+
+func createTokenFailed(userId, reason string, err error) *OperateResult {
+	result := &OperateResult{
+		Token: userId,
+		OK:    false,
+		Msg:   reason,
+		T:     time.Now().Unix(),
+		Err:   err,
+	}
+	return result
+}
+
 func checkTokenValid(token, userId string, t int64) *OperateResult {
 	// t is token creation time
 	result := &OperateResult{
@@ -198,7 +240,7 @@ func revokeTokenFailed(token, reason string, err error) *OperateResult {
 	return result
 }
 
-func revokeTokenSucceed(token string, t int64) *OperateResult {
+func revokeTokenOK(token string, t int64) *OperateResult {
 	// t means token revoke time
 	result := &OperateResult{
 		Token: token,

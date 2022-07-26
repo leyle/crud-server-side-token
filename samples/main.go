@@ -68,13 +68,13 @@ func main() {
 	ctx = logger.WithContext(ctx)
 	if selfToken != "" {
 		fmt.Println("create itself server side token...")
-		selfTokenVal, err := sst.GenerateToken(ctx, selfToken)
-		if err != nil {
+		selfTokenResult := sst.GenerateToken(ctx, selfToken)
+		if selfTokenResult.Err != nil {
 			fmt.Println("generate itself server side token failed")
 			os.Exit(1)
 		}
 		fmt.Println("generate itself server side token succeed")
-		fmt.Println(selfTokenVal)
+		fmt.Println(selfTokenResult.Token)
 		os.Exit(1)
 	}
 

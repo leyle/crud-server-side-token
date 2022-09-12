@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/leyle/go-api-starter/logmiddleware"
-	"github.com/leyle/server-side-token/sstapp"
 	"github.com/rs/zerolog"
+	"gitlab.com/fabric-crud-v2/crud-server-side-token/sstapp"
 )
 
 type AppOption struct {

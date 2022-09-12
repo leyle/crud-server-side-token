@@ -1,4 +1,4 @@
-module github.com/leyle/server-side-token
+module gitlab.com/fabric-crud-v2/crud-server-side-token
 
 go 1.18
 

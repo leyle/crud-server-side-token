@@ -3,9 +3,9 @@ package sstapp
 import (
 	"database/sql"
 	"fmt"
+	"github.com/leyle/crud-server-side-token/internal"
 	"github.com/leyle/go-api-starter/logmiddleware"
 	"github.com/rs/zerolog"
-	"gitlab.com/fabric-crud-v2/crud-server-side-token/internal"
 	"os"
 	"strings"
 	"sync"

@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
-	"gitlab.com/fabric-crud-v2/crud-server-side-token/sstapp"
+	"github.com/leyle/crud-server-side-token/sstapp"
 )
 
 func SampleRouter(ctx *AppOption, g *gin.RouterGroup) {

@@ -16,9 +16,9 @@ const (
 	ServerSideTokenHeaderName = "X-Server-Side-Token"
 )
 
-const (
-	sqliteCfgPath    = ".config/sst"
-	sqliteDbFilename = "sst.db"
+var (
+	SQLiteCfgPath    = ".config/sst"
+	SQLiteDbFilename = "sst.db"
 )
 
 var singleSST *SSTokenOption
@@ -121,14 +121,14 @@ func (sst *SSTokenOption) insureSqliteFile() error {
 		return err
 	}
 
-	sstDbPath := fmt.Sprintf("%s/%s", home, sqliteCfgPath)
+	sstDbPath := fmt.Sprintf("%s/%s", home, SQLiteCfgPath)
 	err = os.MkdirAll(sstDbPath, os.ModePerm)
 	if err != nil {
 		sst.logger.Error().Err(err).Msg("create sqlite path failed")
 		return err
 	}
 
-	sqliteDbPath := fmt.Sprintf("%s/%s", sstDbPath, sqliteDbFilename)
+	sqliteDbPath := fmt.Sprintf("%s/%s", sstDbPath, SQLiteDbFilename)
 	sst.sqliteFile = sqliteDbPath
 
 	return nil

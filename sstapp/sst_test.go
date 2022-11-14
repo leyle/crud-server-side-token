@@ -34,6 +34,7 @@ func getContext() context.Context {
 }
 
 func TestGenerateToken(t *testing.T) {
+	SQLiteCfgPath = ".config/fabric-state/sst"
 	ctx := getContext()
 	sst := getSSTOpt()
 

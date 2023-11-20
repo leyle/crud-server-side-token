@@ -7,6 +7,7 @@ import (
 	"github.com/leyle/go-api-starter/logmiddleware"
 	"github.com/rs/zerolog"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -115,14 +116,7 @@ func NewSSTokenOption(serviceName, aesKey string) (*SSTokenOption, error) {
 }
 
 func (sst *SSTokenOption) insureSqliteFile() error {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		sst.logger.Error().Err(err).Msg("create sqlite path, get user home dir failed")
-		return err
-	}
-
-	sstDbPath := fmt.Sprintf("%s/%s", home, SQLiteCfgPath)
-	err = os.MkdirAll(sstDbPath, os.ModePerm)
+	sstDbPath, err := sst.getDBPath()
 	if err != nil {
 		sst.logger.Error().Err(err).Msg("create sqlite path failed")
 		return err
@@ -132,6 +126,25 @@ func (sst *SSTokenOption) insureSqliteFile() error {
 	sst.sqliteFile = sqliteDbPath
 
 	return nil
+}
+
+func (sst *SSTokenOption) getDBPath() (string, error) {
+	dbPath := SQLiteCfgPath
+	if !filepath.IsAbs(SQLiteCfgPath) {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		dbPath = fmt.Sprintf("%s/%s", home, SQLiteCfgPath)
+	}
+
+	// double insure path exist
+	err := os.MkdirAll(dbPath, os.ModePerm)
+	if err != nil {
+		return "", err
+	}
+
+	return dbPath, nil
 }
 
 func (sst *SSTokenOption) SqliteFilePath() string {
